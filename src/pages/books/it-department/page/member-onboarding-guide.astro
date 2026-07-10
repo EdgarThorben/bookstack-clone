@@ -11,7 +11,8 @@ const nav = await getItDepartmentNav();
 const page = await getPageBySlug("member-onboarding-guide");
 
 if (!page) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 ---

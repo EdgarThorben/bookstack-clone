@@ -7,7 +7,8 @@ const { shelf: shelfSlug } = Astro.params;
 const shelf = shelfSlug ? await getShelfBySlug(shelfSlug) : null;
 
 if (!shelf) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const breadcrumbItems = [

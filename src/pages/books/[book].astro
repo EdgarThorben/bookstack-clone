@@ -12,7 +12,8 @@ if (bookSlug === "it-department") {
 const result = bookSlug ? await getBookWithShelfBySlug(bookSlug) : null;
 
 if (!result) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const { book, shelf } = result;

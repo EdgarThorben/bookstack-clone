@@ -13,7 +13,8 @@ const { slug } = Astro.params;
 const page = slug ? await getPageBySlug(slug) : null;
 
 if (!page) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const result = Astro.getActionResult(actions.updatePage);

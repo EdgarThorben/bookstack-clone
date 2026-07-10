@@ -11,7 +11,8 @@ const nav = await getItDepartmentNav();
 const page = await getPageBySlug("it-holiday-party-event");
 
 if (!page) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const schedule = [

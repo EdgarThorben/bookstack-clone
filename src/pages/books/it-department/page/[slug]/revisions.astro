@@ -8,7 +8,8 @@ const { slug } = Astro.params;
 const result = slug ? await getPageRevisions(slug) : null;
 
 if (!result) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const { title, revisions } = result;

@@ -15,7 +15,8 @@ const server = slug ? await getPageBySlug(slug) : null;
 // Content pages under IT Department have their own dedicated route files; this
 // route only serves pages that live inside the Server Systems chapter.
 if (!server || !nav.chapter || server.chapterId !== nav.chapter.id) {
-  return new Response(null, { status: 404 });
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
 }
 
 const categories = groupDetailsByCategory(server.details);
