@@ -1,0 +1,74 @@
+---
+import BookStackLayout from "../../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../../components/Breadcrumb.astro";
+import { getPageRevisions } from "../../../../../lib/queries";
+import { formatRelativeTime } from "../../../../../lib/time";
+
+const { slug } = Astro.params;
+const result = slug ? await getPageRevisions(slug) : null;
+
+if (!result) {
+  return new Response(null, { status: 404 });
+}
+
+const { title, revisions } = result;
+const backHref = `/books/it-department/page/${slug}`;
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "IT Department", href: "/books/it-department", icon: "book" },
+  { label: title, href: backHref, icon: "page" },
+  { label: "Revisions", href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title={`Revisions — ${title}`}>
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>Revisions</h1>
+    <p style="color:var(--bs-muted); margin-bottom:1.5rem;">
+      Revision history for <a href={backHref}>{title}</a>. Expand a revision to see exactly what
+      changed.
+    </p>
+
+    {
+      revisions.map((rev, i) => (
+        <details class="revision-block" open={i === 0}>
+          <summary>
+            <span class="rev-num">Revision #{rev.revisionNo}</span>
+            <span class="rev-meta">
+              {formatRelativeTime(rev.createdAt)} by {rev.authorName ?? "Unknown"}
+            </span>
+            <span class="rev-summary">{rev.summary}</span>
+          </summary>
+          {rev.changes.length > 0 ? (
+            <div class="nested-changes">
+              <table class="detail-table">
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Previous Value</th>
+                    <th>New Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rev.changes.map((c) => (
+                    <tr>
+                      <td>{c.field}</td>
+                      <td class="diff-old">{c.from}</td>
+                      <td class="diff-new">{c.to}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p class="no-changes">No field changes — this was the initial version of the page.</p>
+          )}
+        </details>
+      ))
+    }
+
+    <a class="back-link" href={backHref}>&larr; Back to {title}</a>
+  </div>
+</BookStackLayout>

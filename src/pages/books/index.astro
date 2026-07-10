@@ -1,0 +1,36 @@
+---
+import BookStackLayout from "../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { getAllBooksWithShelf } from "../../lib/queries";
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "All Books", href: "", icon: "book", current: true },
+];
+
+const allBooks = await getAllBooksWithShelf();
+---
+
+<BookStackLayout title="All Books">
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>All Books</h1>
+    <p style="color:var(--bs-muted); max-width:60ch; margin-bottom:2rem;">
+      Every book across every shelf in the NimbusVault knowledge base.
+    </p>
+    <div class="card-grid">
+      {
+        allBooks.map((book) => (
+          <div class="book-card">
+            <img class="cover-image" src={book.imageUrl} alt={`${book.title} cover`} />
+            <a class="card-title" href={`/books/${book.slug}`}>
+              {book.title}
+            </a>
+            <p>{book.description}</p>
+            <div class="card-meta">&#128214; {book.pageCount} pages &middot; {book.shelfTitle}</div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</BookStackLayout>

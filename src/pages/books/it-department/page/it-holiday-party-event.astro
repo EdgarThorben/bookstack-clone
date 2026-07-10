@@ -1,0 +1,111 @@
+---
+import BookStackLayout from "../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../components/Breadcrumb.astro";
+import BookNav from "../../../../components/BookNav.astro";
+import DetailsPanel from "../../../../components/DetailsPanel.astro";
+import { getItDepartmentNav, getPageBySlug } from "../../../../lib/queries";
+import { breadcrumbForPage } from "../../../../lib/breadcrumbs";
+import { formatRelativeTime } from "../../../../lib/time";
+
+const nav = await getItDepartmentNav();
+const page = await getPageBySlug("it-holiday-party-event");
+
+if (!page) {
+  return new Response(null, { status: 404 });
+}
+
+const schedule = [
+  { time: "6:00 PM", activity: "Doors open, welcome drinks" },
+  { time: "6:30 PM", activity: "Team awards — \"Best Uptime\", \"Fastest Incident Response\"" },
+  { time: "7:15 PM", activity: "Dinner is served" },
+  { time: "8:00 PM", activity: "Server-rack-themed trivia (prizes for top 3 teams)" },
+  { time: "9:00 PM", activity: "Music & open floor" },
+];
+---
+
+<BookStackLayout title="IT Holiday Party Event">
+  <Breadcrumb
+    items={breadcrumbForPage({
+      shelfTitle: nav.shelf.title,
+      shelfSlug: nav.shelf.slug,
+      bookTitle: nav.book.title,
+      bookSlug: nav.book.slug,
+      pageTitle: "IT Holiday Party Event",
+    })}
+  />
+  <div class="bs-layout">
+    <aside class="bs-side">
+      <h4>Page Navigation</h4>
+      <ul class="page-nav-list">
+        <li><a href="#details" class="active">Details</a></li>
+        <li><a href="#schedule">Schedule</a></li>
+      </ul>
+      <h4>Book Navigation</h4>
+      <BookNav
+        bookTitle={nav.book.title}
+        bookHref={`/books/${nav.book.slug}`}
+        chapterTitle={nav.chapter?.title ?? "Server Systems"}
+        chapterPages={nav.chapterPages}
+        otherPages={nav.otherPages}
+        activeSlug="it-holiday-party-event"
+      />
+    </aside>
+
+    <main class="bs-content">
+      <h1>IT Holiday Party Event</h1>
+      <img
+        class="simple-page-hero"
+        src="https://picsum.photos/seed/nimbusvault-holiday-party/1000/500"
+        alt="Holiday party celebration"
+      />
+
+      <h2 id="details">Details</h2>
+      <table class="detail-table">
+        <tbody>
+          {
+            page.details.map((d) => (
+              <tr>
+                <th>{d.label}</th>
+                <td>{d.value}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+
+      <h2 id="schedule">Schedule</h2>
+      <div class="table-scroll">
+        <table class="detail-table">
+          <thead>
+            <tr><th>Time</th><th>Activity</th></tr>
+          </thead>
+          <tbody>
+            {
+              schedule.map((s) => (
+                <tr>
+                  <td>{s.time}</td>
+                  <td>{s.activity}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="bs-side details-side">
+      <DetailsPanel
+        revision={page.currentRevision}
+        createdBy={page.createdByName}
+        createdAgo={formatRelativeTime(page.createdAt)}
+        updatedBy={page.updatedByName}
+        updatedAgo={formatRelativeTime(page.updatedAt)}
+        revisionsHref={`/books/it-department/page/${page.slug}/revisions`}
+        editHref={Astro.locals.user ? `/books/it-department/page/${page.slug}/edit` : undefined}
+        exportData={page.details}
+        exportFilename={page.slug}
+        exportTitle={page.title}
+      />
+    </aside>
+  </div>
+</BookStackLayout>

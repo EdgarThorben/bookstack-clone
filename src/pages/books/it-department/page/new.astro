@@ -1,0 +1,75 @@
+---
+import BookStackLayout from "../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../components/Breadcrumb.astro";
+import DetailRowsEditor from "../../../../components/DetailRowsEditor.astro";
+import { actions } from "astro:actions";
+import { getItDepartmentNav } from "../../../../lib/queries";
+
+if (!Astro.locals.user) {
+  return Astro.redirect("/login");
+}
+
+const nav = await getItDepartmentNav();
+const result = Astro.getActionResult(actions.createPage);
+
+if (result && !result.error) {
+  return Astro.redirect(`/books/it-department/page/${result.data.slug}`);
+}
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Internal Departments", href: "/shelves/internal-departments", icon: "shelf" },
+  { label: "IT Department", href: "/books/it-department", icon: "book" },
+  { label: "New Page", href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title="New Page">
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>New Page</h1>
+    {result?.error && <p class="login-error">{result.error.message}</p>}
+
+    <form class="page-form" method="POST" action={actions.createPage}>
+      <label>
+        Title
+        <input type="text" name="title" required placeholder="e.g. prod-aws-newnode" />
+      </label>
+
+      <fieldset>
+        <legend>Placement</legend>
+        <label>
+          <input type="radio" name="chapter" value="server-systems" checked />
+          {nav.chapter?.title ?? "Server Systems"} chapter
+        </label>
+        <label>
+          <input type="radio" name="chapter" value="other" />
+          Standalone page (Other Pages)
+        </label>
+      </fieldset>
+
+      <label>
+        Region <span style="font-weight:400;color:var(--bs-muted);">(optional, shown under the card thumbnail)</span>
+        <input type="text" name="region" placeholder="e.g. AWS us-east-1" />
+      </label>
+
+      <label>
+        Image URL <span style="font-weight:400;color:var(--bs-muted);">(optional)</span>
+        <input type="url" name="imageUrl" placeholder="https://..." />
+      </label>
+
+      <label>
+        Warning <span style="font-weight:400;color:var(--bs-muted);">(optional, shown in a red callout)</span>
+        <textarea name="warning" placeholder="e.g. Do not restart this machine..."></textarea>
+      </label>
+
+      <label>System Details</label>
+      <DetailRowsEditor />
+
+      <div class="form-actions">
+        <button type="submit" class="primary-button">Create Page</button>
+        <a href="/books/it-department" class="secondary-button">Cancel</a>
+      </div>
+    </form>
+  </div>
+</BookStackLayout>

@@ -1,0 +1,40 @@
+---
+import BookStackLayout from "../layouts/BookStackLayout.astro";
+import { actions } from "astro:actions";
+
+const result = Astro.getActionResult(actions.login);
+
+if (result && !result.error) {
+  return Astro.redirect("/");
+}
+---
+
+<BookStackLayout title="Log in">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1>Log in to NimbusVault</h1>
+      <p class="login-note">
+        Sign in with a seeded demo account. Every demo user shares the password
+        <code>NimbusDemo!2024</code> — try <code>priya@nimbusvault.io</code>,
+        <code>barry@nimbusvault.io</code>, or <code>marcus@nimbusvault.io</code>.
+      </p>
+      {
+        result?.error && (
+          <p class="login-error">{result.error.message}</p>
+        )
+      }
+      <form class="login-form" method="POST" action={actions.login}>
+        <label>
+          Email
+          <input type="email" name="email" placeholder="you@nimbusvault.io" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" placeholder="••••••••" required />
+        </label>
+        <button type="submit">Log in</button>
+      </form>
+      <a class="back-link" href="/">&larr; Back to Shelves</a>
+    </div>
+  </div>
+</BookStackLayout>

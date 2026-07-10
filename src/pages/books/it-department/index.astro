@@ -1,0 +1,59 @@
+---
+import BookStackLayout from "../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import { getItDepartmentNav } from "../../../lib/queries";
+
+const { chapter, chapterPages, otherPages } = await getItDepartmentNav();
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Internal Departments", href: "/shelves/internal-departments", icon: "shelf" },
+  { label: "IT Department", href: "", icon: "book", current: true },
+];
+---
+
+<BookStackLayout title="IT Department">
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>IT Department</h1>
+    <p style="color:var(--bs-muted); max-width:60ch; margin-bottom:2rem;">
+      Server inventory, storage cluster topology, and infrastructure runbooks for the platform
+      that keeps customer data safe.
+    </p>
+
+    {Astro.locals.user && <a class="new-page-link" href="/books/it-department/page/new">+ New Page</a>}
+
+    <div class="shelf-block-header">
+      <h2>&#9656; {chapter?.title ?? "Server Systems"}</h2>
+      <p>{chapterPages.length} pages</p>
+    </div>
+    <div class="card-grid">
+      {
+        chapterPages.map((s) => (
+          <div class="book-card">
+            <img class="cover-image" src={s.imageUrl ?? undefined} alt={s.title} />
+            <a class="card-title" href={`/books/it-department/page/${s.slug}`}>
+              {s.title}
+            </a>
+            <p>{s.region}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="shelf-block-header" style="margin-top:2.5rem;">
+      <h2>Other Pages</h2>
+    </div>
+    <div class="card-grid">
+      {
+        otherPages.map((p) => (
+          <div class="book-card">
+            <a class="card-title" style="padding-top:1rem;" href={`/books/it-department/page/${p.slug}`}>
+              {p.title}
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</BookStackLayout>

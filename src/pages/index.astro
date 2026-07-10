@@ -1,0 +1,74 @@
+---
+import BookStackLayout from "../layouts/BookStackLayout.astro";
+import { getShelves, getItDepartmentNav } from "../lib/queries";
+import { db } from "../db/client";
+import { pages, books } from "../db/schema";
+import { eq } from "drizzle-orm";
+
+const shelves = await getShelves();
+
+const itDeptPages = await db
+  .select({ details: pages.details })
+  .from(pages)
+  .innerJoin(books, eq(pages.bookId, books.id))
+  .where(eq(books.slug, "it-department"));
+
+const { chapterPages } = await getItDepartmentNav();
+
+const totalStorageTB = itDeptPages.reduce((sum, p) => {
+  const detail = p.details.find((d) => d.label === "Customer Data Hosted");
+  const match = detail?.value.match(/([\d.]+)TB/);
+  return sum + (match ? parseFloat(match[1]) : 0);
+}, 0);
+---
+
+<BookStackLayout title="Shelves">
+  <div class="home-hero">
+    <h1>NimbusVault Knowledge Base</h1>
+    <p>Everything the team needs to know about how we store, protect, and serve customer data.</p>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-box">
+      <div class="num">{chapterPages.length}</div>
+      <div class="lbl">Tracked Servers</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">{totalStorageTB.toFixed(1)}TB</div>
+      <div class="lbl">Customer Data Hosted</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">99.94%</div>
+      <div class="lbl">Avg. 90-day Uptime</div>
+    </div>
+    <div class="stat-box">
+      <div class="num">5</div>
+      <div class="lbl">Regions Online</div>
+    </div>
+  </div>
+
+  <div class="home-wrap">
+    {
+      shelves.map((shelf) => (
+        <div class="shelf-block">
+          <div class="shelf-block-header">
+            <h2>{shelf.title}</h2>
+            <p>{shelf.description}</p>
+          </div>
+          <div class="card-grid">
+            {shelf.books.map((book) => (
+              <div class="book-card">
+                <img class="cover-image" src={book.imageUrl} alt={`${book.title} cover`} />
+                <a class="card-title" href={`/books/${book.slug}`}>
+                  {book.title}
+                </a>
+                <p>{book.description}</p>
+                <div class="card-meta">&#128214; {book.pageCount} pages</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</BookStackLayout>

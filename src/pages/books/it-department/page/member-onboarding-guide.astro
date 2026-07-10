@@ -1,0 +1,100 @@
+---
+import BookStackLayout from "../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../components/Breadcrumb.astro";
+import BookNav from "../../../../components/BookNav.astro";
+import DetailsPanel from "../../../../components/DetailsPanel.astro";
+import { getItDepartmentNav, getPageBySlug } from "../../../../lib/queries";
+import { breadcrumbForPage } from "../../../../lib/breadcrumbs";
+import { formatRelativeTime } from "../../../../lib/time";
+
+const nav = await getItDepartmentNav();
+const page = await getPageBySlug("member-onboarding-guide");
+
+if (!page) {
+  return new Response(null, { status: 404 });
+}
+
+---
+
+<BookStackLayout title="Member Onboarding Guide">
+  <Breadcrumb
+    items={breadcrumbForPage({
+      shelfTitle: nav.shelf.title,
+      shelfSlug: nav.shelf.slug,
+      bookTitle: nav.book.title,
+      bookSlug: nav.book.slug,
+      pageTitle: "Member Onboarding Guide",
+    })}
+  />
+  <div class="bs-layout">
+    <aside class="bs-side">
+      <h4>Page Navigation</h4>
+      <ul class="page-nav-list">
+        <li><a href="#checklist" class="active">Checklist</a></li>
+        <li><a href="#resources">Resources</a></li>
+      </ul>
+      <h4>Book Navigation</h4>
+      <BookNav
+        bookTitle={nav.book.title}
+        bookHref={`/books/${nav.book.slug}`}
+        chapterTitle={nav.chapter?.title ?? "Server Systems"}
+        chapterPages={nav.chapterPages}
+        otherPages={nav.otherPages}
+        activeSlug="member-onboarding-guide"
+      />
+    </aside>
+
+    <main class="bs-content">
+      <h1>Member Onboarding Guide</h1>
+      <p>
+        Welcome to the IT Department at NimbusVault. This guide walks new engineers through
+        their first two weeks getting familiar with the storage platform that keeps our
+        customers' data safe, durable, and fast to retrieve.
+      </p>
+
+      <h2 id="checklist">Checklist</h2>
+      <div class="table-scroll">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Owner &amp; Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              page.details.map((d) => (
+                <tr>
+                  <td>{d.label}</td>
+                  <td>{d.value}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="resources">Resources</h2>
+      <ul>
+        <li>Storage Architecture book — tiering, replication, and encryption design</li>
+        <li>Server Systems chapter — live inventory of every node hosting customer data</li>
+        <li>Disaster Recovery Playbooks — failover drills and RTO/RPO targets</li>
+      </ul>
+    </main>
+
+    <aside class="bs-side details-side">
+      <DetailsPanel
+        revision={page.currentRevision}
+        createdBy={page.createdByName}
+        createdAgo={formatRelativeTime(page.createdAt)}
+        updatedBy={page.updatedByName}
+        updatedAgo={formatRelativeTime(page.updatedAt)}
+        revisionsHref={`/books/it-department/page/${page.slug}/revisions`}
+        editHref={Astro.locals.user ? `/books/it-department/page/${page.slug}/edit` : undefined}
+        exportData={page.details}
+        exportFilename={page.slug}
+        exportTitle={page.title}
+      />
+    </aside>
+  </div>
+</BookStackLayout>

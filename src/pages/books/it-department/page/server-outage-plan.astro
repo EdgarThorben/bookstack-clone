@@ -1,0 +1,118 @@
+---
+import BookStackLayout from "../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../components/Breadcrumb.astro";
+import BookNav from "../../../../components/BookNav.astro";
+import DetailsPanel from "../../../../components/DetailsPanel.astro";
+import { getItDepartmentNav, getPageBySlug } from "../../../../lib/queries";
+import { breadcrumbForPage } from "../../../../lib/breadcrumbs";
+import { formatRelativeTime } from "../../../../lib/time";
+
+const nav = await getItDepartmentNav();
+const page = await getPageBySlug("server-outage-plan");
+
+if (!page) {
+  return new Response(null, { status: 404 });
+}
+
+const escalation: Record<string, string> = {
+  "SEV-1": "Page on-call lead + Director of Infra",
+  "SEV-2": "Page on-call engineer",
+  "SEV-3": "Slack #infra-oncall",
+  "SEV-4": "File a ticket",
+};
+---
+
+<BookStackLayout title="Server Outage Plan">
+  <Breadcrumb
+    items={breadcrumbForPage({
+      shelfTitle: nav.shelf.title,
+      shelfSlug: nav.shelf.slug,
+      bookTitle: nav.book.title,
+      bookSlug: nav.book.slug,
+      pageTitle: "Server Outage Plan",
+    })}
+  />
+  <div class="bs-layout">
+    <aside class="bs-side">
+      <h4>Page Navigation</h4>
+      <ul class="page-nav-list">
+        <li><a href="#severity-levels" class="active">Severity Levels</a></li>
+        <li><a href="#response-steps">Response Steps</a></li>
+      </ul>
+      <h4>Book Navigation</h4>
+      <BookNav
+        bookTitle={nav.book.title}
+        bookHref={`/books/${nav.book.slug}`}
+        chapterTitle={nav.chapter?.title ?? "Server Systems"}
+        chapterPages={nav.chapterPages}
+        otherPages={nav.otherPages}
+        activeSlug="server-outage-plan"
+      />
+    </aside>
+
+    <main class="bs-content">
+      <h1>Server Outage Plan</h1>
+      <p>
+        This runbook defines how the IT Department responds to storage node and region-level
+        outages so customer data stays durable and recoverable at every severity level.
+      </p>
+
+      <div class="warning-box">
+        <span class="warn-icon">&#9888;</span>
+        <div>
+          Always confirm the affected node against the Server Systems chapter before taking any
+          action — restarting the wrong instance can trigger unnecessary re-allocation and
+          customer-facing downtime.
+        </div>
+      </div>
+
+      <h2 id="severity-levels">Severity Levels</h2>
+      <div class="table-scroll">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Description</th>
+              <th>Escalation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              page.details.map((d) => (
+                <tr>
+                  <td>{d.label}</td>
+                  <td>{d.value}</td>
+                  <td>{escalation[d.label] ?? "—"}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="response-steps">Response Steps</h2>
+      <ol>
+        <li>Acknowledge the alert in PagerDuty within the target response time for its severity.</li>
+        <li>Identify the affected node in the Server Systems chapter and confirm its region and role.</li>
+        <li>Check replication status — for hot-tier nodes, confirm the warm/cold replica is serving reads.</li>
+        <li>Open an incident channel and post updates every 15 minutes until resolved.</li>
+        <li>Write a postmortem within 48 hours for any SEV-1 or SEV-2 incident.</li>
+      </ol>
+    </main>
+
+    <aside class="bs-side details-side">
+      <DetailsPanel
+        revision={page.currentRevision}
+        createdBy={page.createdByName}
+        createdAgo={formatRelativeTime(page.createdAt)}
+        updatedBy={page.updatedByName}
+        updatedAgo={formatRelativeTime(page.updatedAt)}
+        revisionsHref={`/books/it-department/page/${page.slug}/revisions`}
+        editHref={Astro.locals.user ? `/books/it-department/page/${page.slug}/edit` : undefined}
+        exportData={page.details}
+        exportFilename={page.slug}
+        exportTitle={page.title}
+      />
+    </aside>
+  </div>
+</BookStackLayout>

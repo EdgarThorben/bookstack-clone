@@ -1,0 +1,80 @@
+---
+import type { PageDetail } from "../db/schema";
+
+interface Props {
+  revision: number;
+  createdBy: string;
+  createdAgo: string;
+  updatedBy: string;
+  updatedAgo: string;
+  revisionsHref: string;
+  editHref?: string;
+  exportData: PageDetail[];
+  exportFilename: string;
+  exportTitle: string;
+}
+
+const {
+  revision,
+  createdBy,
+  createdAgo,
+  updatedBy,
+  updatedAgo,
+  revisionsHref,
+  editHref,
+  exportData,
+  exportFilename,
+  exportTitle,
+} = Astro.props;
+
+function toCsv(data: PageDetail[]) {
+  const rows = [["Field", "Value"], ...data.map((d) => [d.label, d.value])];
+  return rows
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+}
+
+function toJson(data: PageDetail[]) {
+  const obj: Record<string, string> = {};
+  for (const d of data) obj[d.label] = d.value;
+  return JSON.stringify(obj, null, 2);
+}
+
+function toMarkdown(title: string, data: PageDetail[]) {
+  let md = `# ${title}\n\n| Field | Value |\n| --- | --- |\n`;
+  for (const d of data) md += `| ${d.label} | ${d.value} |\n`;
+  return md;
+}
+
+const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(toCsv(exportData))}`;
+const jsonHref = `data:application/json;charset=utf-8,${encodeURIComponent(toJson(exportData))}`;
+const mdHref = `data:text/markdown;charset=utf-8,${encodeURIComponent(toMarkdown(exportTitle, exportData))}`;
+---
+
+<div class="details-panel">
+  <h4>Details</h4>
+  <ul>
+    <li><span class="dot">&#8635;</span> Revision #{revision}</li>
+    <li><span class="dot">&#9733;</span> Created {createdAgo} by {createdBy}</li>
+    <li><span class="dot">&#9998;</span> Updated {updatedAgo} by {updatedBy}</li>
+  </ul>
+  <h4>Actions</h4>
+  <div class="actions">
+    {editHref && (
+      <>
+        <a href={editHref}><span class="dot">&#9998;</span> Edit</a>
+        <hr class="thin" />
+      </>
+    )}
+    <a href={revisionsHref}><span class="dot">&#8635;</span> Revisions</a>
+    <hr class="thin" />
+    <details class="export-menu">
+      <summary><span class="dot">&#8615;</span> Export</summary>
+      <div class="export-options">
+        <a download={`${exportFilename}.csv`} href={csvHref}>Export as CSV</a>
+        <a download={`${exportFilename}.json`} href={jsonHref}>Export as JSON</a>
+        <a download={`${exportFilename}.md`} href={mdHref}>Export as Markdown</a>
+      </div>
+    </details>
+  </div>
+</div>

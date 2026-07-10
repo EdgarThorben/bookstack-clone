@@ -1,0 +1,78 @@
+---
+import BookStackLayout from "../../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../../components/Breadcrumb.astro";
+import DetailRowsEditor from "../../../../../components/DetailRowsEditor.astro";
+import { actions } from "astro:actions";
+import { getPageBySlug } from "../../../../../lib/queries";
+
+if (!Astro.locals.user) {
+  return Astro.redirect("/login");
+}
+
+const { slug } = Astro.params;
+const page = slug ? await getPageBySlug(slug) : null;
+
+if (!page) {
+  return new Response(null, { status: 404 });
+}
+
+const result = Astro.getActionResult(actions.updatePage);
+
+if (result && !result.error) {
+  return Astro.redirect(`/books/it-department/page/${result.data.slug}`);
+}
+
+const backHref = `/books/it-department/page/${page.slug}`;
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "IT Department", href: "/books/it-department", icon: "book" },
+  { label: page.title, href: backHref, icon: "page" },
+  { label: "Edit", href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title={`Edit — ${page.title}`}>
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>Edit Page</h1>
+    {result?.error && <p class="login-error">{result.error.message}</p>}
+
+    <form class="page-form" method="POST" action={actions.updatePage}>
+      <input type="hidden" name="slug" value={page.slug} />
+
+      <label>
+        Title
+        <input type="text" name="title" required value={page.title} />
+      </label>
+
+      <label>
+        Region <span style="font-weight:400;color:var(--bs-muted);">(optional)</span>
+        <input type="text" name="region" value={page.region ?? ""} />
+      </label>
+
+      <label>
+        Image URL <span style="font-weight:400;color:var(--bs-muted);">(optional)</span>
+        <input type="url" name="imageUrl" value={page.imageUrl ?? ""} />
+      </label>
+
+      <label>
+        Warning <span style="font-weight:400;color:var(--bs-muted);">(optional)</span>
+        <textarea name="warning">{page.warning ?? ""}</textarea>
+      </label>
+
+      <label>System Details</label>
+      <DetailRowsEditor initialDetails={page.details} />
+
+      <label>
+        Edit summary <span style="font-weight:400;color:var(--bs-muted);">(optional, shown in revision history)</span>
+        <input type="text" name="summary" placeholder="What did you change and why?" />
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="primary-button">Save Changes</button>
+        <a href={backHref} class="secondary-button">Cancel</a>
+      </div>
+    </form>
+  </div>
+</BookStackLayout>

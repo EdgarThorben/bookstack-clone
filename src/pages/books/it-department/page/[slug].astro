@@ -1,0 +1,107 @@
+---
+import BookStackLayout from "../../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../../components/Breadcrumb.astro";
+import BookNav from "../../../../components/BookNav.astro";
+import DetailsPanel from "../../../../components/DetailsPanel.astro";
+import { getItDepartmentNav, getPageBySlug } from "../../../../lib/queries";
+import { groupDetailsByCategory } from "../../../../lib/details";
+import { breadcrumbForPage } from "../../../../lib/breadcrumbs";
+import { formatRelativeTime } from "../../../../lib/time";
+
+const { slug } = Astro.params;
+const nav = await getItDepartmentNav();
+const server = slug ? await getPageBySlug(slug) : null;
+
+// Content pages under IT Department have their own dedicated route files; this
+// route only serves pages that live inside the Server Systems chapter.
+if (!server || !nav.chapter || server.chapterId !== nav.chapter.id) {
+  return new Response(null, { status: 404 });
+}
+
+const categories = groupDetailsByCategory(server.details);
+---
+
+<BookStackLayout title={server.title}>
+  <Breadcrumb
+    items={breadcrumbForPage({
+      shelfTitle: nav.shelf.title,
+      shelfSlug: nav.shelf.slug,
+      bookTitle: nav.book.title,
+      bookSlug: nav.book.slug,
+      chapterTitle: nav.chapter.title,
+      pageTitle: server.title,
+    })}
+  />
+  <div class="bs-layout">
+    <aside class="bs-side">
+      <h4>Page Navigation</h4>
+      <ul class="page-nav-list">
+        <li><a href="#system-details" class="active">System Details</a></li>
+        <li><a href="#server-image">Server Image</a></li>
+      </ul>
+      <h4>Book Navigation</h4>
+      <BookNav
+        bookTitle={nav.book.title}
+        bookHref={`/books/${nav.book.slug}`}
+        chapterTitle={nav.chapter.title}
+        chapterPages={nav.chapterPages}
+        otherPages={nav.otherPages}
+        activeSlug={server.slug}
+      />
+    </aside>
+
+    <main class="bs-content">
+      <h1>{server.title}</h1>
+
+      <h2 id="system-details">System Details</h2>
+      {
+        categories.map((group) => (
+          <details class="category-details" open>
+            <summary>
+              {group.category} <span class="cat-count">({group.items.length})</span>
+            </summary>
+            <div class="table-scroll">
+              <table class="detail-table">
+                <tbody>
+                  {group.items.map((d) => (
+                    <tr>
+                      <th>{d.label}</th>
+                      <td>{d.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        ))
+      }
+
+      {
+        server.warning && (
+          <div class="warning-box">
+            <span class="warn-icon">&#9888;</span>
+            <div>{server.warning}</div>
+          </div>
+        )
+      }
+
+      <h2 id="server-image">Server Image</h2>
+      <img class="server-image" src={server.imageUrl ?? undefined} alt={`Rack photo for ${server.title}`} />
+    </main>
+
+    <aside class="bs-side details-side">
+      <DetailsPanel
+        revision={server.currentRevision}
+        createdBy={server.createdByName}
+        createdAgo={formatRelativeTime(server.createdAt)}
+        updatedBy={server.updatedByName}
+        updatedAgo={formatRelativeTime(server.updatedAt)}
+        revisionsHref={`/books/it-department/page/${server.slug}/revisions`}
+        editHref={Astro.locals.user ? `/books/it-department/page/${server.slug}/edit` : undefined}
+        exportData={server.details}
+        exportFilename={server.slug}
+        exportTitle={server.title}
+      />
+    </aside>
+  </div>
+</BookStackLayout>
