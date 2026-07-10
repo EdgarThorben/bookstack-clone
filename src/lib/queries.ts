@@ -42,9 +42,9 @@ export async function getBookWithShelfBySlug(slug: string) {
   return row ?? null;
 }
 
-export async function getItDepartmentNav() {
-  const result = await getBookWithShelfBySlug("it-department");
-  if (!result) throw new Error("IT Department book is missing — did you run `npm run db:seed`?");
+export async function getBookNav(bookSlug: string) {
+  const result = await getBookWithShelfBySlug(bookSlug);
+  if (!result) throw new Error(`Book "${bookSlug}" is missing — did you run \`npm run db:seed\`?`);
   const { book, shelf } = result;
   const [chapter] = await db.select().from(chapters).where(eq(chapters.bookId, book.id)).limit(1);
   const allPages = await db
@@ -54,6 +54,10 @@ export async function getItDepartmentNav() {
   const chapterPages = allPages.filter((p) => chapter && p.chapterId === chapter.id);
   const otherPages = allPages.filter((p) => !chapter || p.chapterId !== chapter.id);
   return { book, shelf, chapter, chapterPages, otherPages };
+}
+
+export function getItDepartmentNav() {
+  return getBookNav("it-department");
 }
 
 export async function getPageBySlug(slug: string) {
@@ -111,18 +115,17 @@ export async function getSearchEntries(): Promise<SearchEntry[]> {
     }
   }
 
-  const itDeptPages = await db
-    .select({ slug: pages.slug, title: pages.title, region: pages.region })
+  const allPages = await db
+    .select({ slug: pages.slug, title: pages.title, region: pages.region, bookSlug: books.slug, bookTitle: books.title })
     .from(pages)
-    .innerJoin(books, eq(pages.bookId, books.id))
-    .where(eq(books.slug, "it-department"));
+    .innerJoin(books, eq(pages.bookId, books.id));
 
-  for (const p of itDeptPages) {
+  for (const p of allPages) {
     entries.push({
       title: p.title,
-      url: `/books/it-department/page/${p.slug}`,
+      url: `/books/${p.bookSlug}/page/${p.slug}`,
       type: "Page",
-      excerpt: p.region ? `${p.region} — IT Department` : "IT Department",
+      excerpt: p.region ? `${p.region} — ${p.bookTitle}` : p.bookTitle,
     });
   }
 

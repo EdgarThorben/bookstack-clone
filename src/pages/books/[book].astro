@@ -5,8 +5,8 @@ import { getBookWithShelfBySlug } from "../../lib/queries";
 
 const { book: bookSlug } = Astro.params;
 
-if (bookSlug === "it-department") {
-  return Astro.redirect("/books/it-department");
+if (bookSlug === "it-department" || bookSlug === "oberlinhaus") {
+  return Astro.redirect(`/books/${bookSlug}`);
 }
 
 const result = bookSlug ? await getBookWithShelfBySlug(bookSlug) : null;

@@ -1,5 +1,4 @@
 import { hash, verify } from "@node-rs/argon2";
-import { ActionError } from "astro:actions";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { sessions, users } from "../db/schema";
@@ -61,11 +60,4 @@ export async function getSessionUser(sessionId: string): Promise<SessionUser | n
 
 export async function deleteSession(sessionId: string) {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
-}
-
-export function requireUser(locals: App.Locals): SessionUser {
-  if (!locals.user) {
-    throw new ActionError({ code: "UNAUTHORIZED", message: "You must be logged in to do that." });
-  }
-  return locals.user;
 }

@@ -4,6 +4,7 @@ import { db } from "../src/db/client";
 import { books, chapters, pageRevisions, pages, shelves, users } from "../src/db/schema";
 import type { PageDetail } from "../src/db/schema";
 import { hashPassword } from "../src/lib/auth";
+import { serverImage } from "../src/lib/images";
 
 const DEMO_PASSWORD = "NimbusDemo!2024";
 
@@ -20,7 +21,7 @@ function agoDate(spec: string): Date {
   return new Date(Date.now() - amount * msPerUnit[m[2]]);
 }
 
-const img = (seed: string) => `https://picsum.photos/seed/${seed}/900/500`;
+const img = (seed: string) => serverImage(seed, 900, 500);
 
 interface ChangeSpec {
   field: string;
@@ -546,6 +547,258 @@ const contentPages: PageSpec[] = [
   },
 ];
 
+// Illustrative client case: Oberlinhaus (Potsdam/Berlin) is a real diaconal provider of
+// disability care, health, education, and vocational services (oberlinhaus.de). This is a
+// fictional sample of what an MSP like michi.ws might document for a client like them when
+// hosting on unit.cloud's private cloud — not a representation of Oberlinhaus's actual systems.
+const oberlinhausServers: PageSpec[] = [
+  {
+    slug: "pve-unitcloud-potsdam-01",
+    title: "pve-unitcloud-potsdam-01",
+    region: "unit.cloud Private Cloud — Rechenzentrum Frankfurt/Main",
+    image: img("oberlinhaus-pve-cluster"),
+    chapter: true,
+    warning:
+      "Wartungsfenster ausschließlich Di/Do 22:00–24:00 Uhr — Schichtübergabe in den Wohnstätten darf nicht gestört werden. Vorher Rücksprache mit dem michi.ws NOC.",
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "unit.cloud Private Cloud (Proxmox VE 8, dediziertes Cluster)" },
+      { category: "Compute", label: "IP", value: "10.20.0.1" },
+      { category: "Compute", label: "Instance Size", value: "2x AMD EPYC 7443P, 512GB RAM" },
+      { category: "Compute", label: "CPU", value: "48 vCPU (Cluster-Kapazität)" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "8TB NVMe RAID10" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Hypervisor-Host für alle produktiven Oberlinhaus-VMs" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.96%" },
+      { category: "Operations", label: "Betreut durch", value: "unit.cloud (Infrastruktur) / michi.ws (Konfiguration & Monitoring)" },
+      { category: "Zugang", label: "Admin-Login", value: "obh-cluster-admin" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{ADMIN_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "2 years ago", author: "michael", summary: "Cluster initial für Oberlinhaus provisioniert.", changes: [] },
+      {
+        revision: 2,
+        ago: "6 months ago",
+        author: "michael",
+        summary: "RAM-Aufrüstung nach Einführung der neuen Bewohnerverwaltung.",
+        changes: [{ field: "Instance Size", from: "2x AMD EPYC 7443P, 256GB RAM", to: "2x AMD EPYC 7443P, 512GB RAM" }],
+      },
+      {
+        revision: 3,
+        ago: "3 weeks ago",
+        author: "michael",
+        summary: "Backup-Replikation von wöchentlich auf nightly umgestellt.",
+        changes: [{ field: "Backup Frequency", from: "Weekly Snapshot + Replikation zu unit.cloud RZ Nürnberg", to: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" }],
+      },
+    ],
+  },
+  {
+    slug: "vm-bewohnerverwaltung",
+    title: "vm-bewohnerverwaltung",
+    region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
+    image: img("oberlinhaus-bewohnerverwaltung"),
+    chapter: true,
+    warning:
+      "Enthält besondere Kategorien personenbezogener Daten (Gesundheitsdaten) gem. Art. 9 DSGVO. Zugriff ausschließlich für autorisiertes Pflege- und Verwaltungspersonal — Zugriffsprotokoll wird von michi.ws quartalsweise geprüft.",
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
+      { category: "Compute", label: "IP", value: "10.20.1.11" },
+      { category: "Compute", label: "Instance Size", value: "8 vCPU / 32GB RAM" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "1TB" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Bewohner- und Fallverwaltung für die Wohnstätten Potsdam, Kleinmachnow und Werder (Havel)" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" },
+      { category: "Compliance", label: "Datenkategorie", value: "Besondere Kategorien personenbezogener Daten (Gesundheitsdaten), Art. 9 DSGVO" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.90%" },
+      { category: "Zugang", label: "Service-Account", value: "svc-bewohnerverwaltung" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "2 years ago", author: "michael", summary: "System für die Wohnstätten Potsdam/Kleinmachnow in Betrieb genommen.", changes: [] },
+      {
+        revision: 2,
+        ago: "9 months ago",
+        author: "michael",
+        summary: "Werder (Havel) an die zentrale Bewohnerverwaltung angebunden.",
+        changes: [{ field: "Storage Role", from: "Bewohner- und Fallverwaltung für die Wohnstätten Potsdam und Kleinmachnow", to: "Bewohner- und Fallverwaltung für die Wohnstätten Potsdam, Kleinmachnow und Werder (Havel)" }],
+      },
+      {
+        revision: 3,
+        ago: "2 months ago",
+        author: "michael",
+        summary: "Aufbewahrungsfrist für Offsite-Backups auf Anfrage der Compliance-Beauftragten verlängert.",
+        changes: [{ field: "Backup Frequency", from: "Nightly, 60 Tage Aufbewahrung (Offsite-Replikation)", to: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" }],
+      },
+    ],
+  },
+  {
+    slug: "vm-schulverwaltung",
+    title: "vm-schulverwaltung",
+    region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
+    image: img("oberlinhaus-schulverwaltung"),
+    chapter: true,
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
+      { category: "Compute", label: "IP", value: "10.20.1.12" },
+      { category: "Compute", label: "Instance Size", value: "4 vCPU / 16GB RAM" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "500GB" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Schulverwaltungssoftware für die Oberlin-Schulen und Kindertagesstätten (Potsdam, Michendorf)" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 30 Tage Aufbewahrung" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.85%" },
+      { category: "Zugang", label: "Service-Account", value: "svc-schulverwaltung" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "18 months ago", author: "michael", summary: "Schulverwaltung von lokalem Server in die unit.cloud Private Cloud migriert.", changes: [] },
+      {
+        revision: 2,
+        ago: "4 months ago",
+        author: "michael",
+        summary: "Kindertagesstätten Michendorf in die zentrale Verwaltung aufgenommen.",
+        changes: [{ field: "Storage Role", from: "Schulverwaltungssoftware für die Oberlin-Schulen (Potsdam)", to: "Schulverwaltungssoftware für die Oberlin-Schulen und Kindertagesstätten (Potsdam, Michendorf)" }],
+      },
+    ],
+  },
+  {
+    slug: "vm-fileserver-potsdam",
+    title: "vm-fileserver-potsdam",
+    region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
+    image: img("oberlinhaus-fileserver"),
+    chapter: true,
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
+      { category: "Compute", label: "IP", value: "10.20.1.13" },
+      { category: "Compute", label: "Instance Size", value: "4 vCPU / 16GB RAM" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "4TB" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Datei- und Druckserver, Hauptstandort Potsdam-Babelsberg" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 30 Tage Aufbewahrung" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.93%" },
+      { category: "Zugang", label: "Service-Account", value: "svc-fileserver-potsdam" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "2 years ago", author: "michael", summary: "Initial eingerichtet.", changes: [] },
+      {
+        revision: 2,
+        ago: "5 months ago",
+        author: "michael",
+        summary: "Speicherplatz nach Umstellung auf digitale Aktenführung erweitert.",
+        changes: [{ field: "Attached Disk Size", from: "2TB", to: "4TB" }],
+      },
+    ],
+  },
+  {
+    slug: "vm-personalverwaltung",
+    title: "vm-personalverwaltung",
+    region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
+    image: img("oberlinhaus-personalverwaltung"),
+    chapter: true,
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
+      { category: "Compute", label: "IP", value: "10.20.1.14" },
+      { category: "Compute", label: "Instance Size", value: "6 vCPU / 24GB RAM" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "750GB" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Personalverwaltung, Lohnbuchhaltung und Zeiterfassung für ca. 2.300 Mitarbeitende im Schichtbetrieb" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 90 Tage Aufbewahrung" },
+      { category: "Compliance", label: "Datenkategorie", value: "Personenbezogene Beschäftigtendaten gem. § 26 BDSG" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.91%" },
+      { category: "Zugang", label: "Service-Account", value: "svc-personalverwaltung" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "3 years ago", author: "michael", summary: "Initial eingerichtet.", changes: [] },
+      {
+        revision: 2,
+        ago: "7 months ago",
+        author: "michael",
+        summary: "Zeiterfassung für Schichtbetrieb in den Wohnstätten ergänzt.",
+        changes: [{ field: "Storage Role", from: "Personalverwaltung und Lohnbuchhaltung für ca. 2.300 Mitarbeitende", to: "Personalverwaltung, Lohnbuchhaltung und Zeiterfassung für ca. 2.300 Mitarbeitende im Schichtbetrieb" }],
+      },
+    ],
+  },
+  {
+    slug: "pbx-3cx-oberlinhaus",
+    title: "pbx-3cx-oberlinhaus",
+    region: "unit.cloud Cloud-PBX (3CX)",
+    image: img("oberlinhaus-pbx"),
+    chapter: true,
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "unit.cloud Cloud-PBX (3CX)" },
+      { category: "Compute", label: "IP", value: "10.20.2.20" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Telefonanlage für alle Standorte: Potsdam, Berlin, Michendorf, Bad Belzig, Kleinmachnow, Werder (Havel), Wolfsburg" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Weekly Konfigurations-Backup" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.98%" },
+      { category: "Operations", label: "Betreut durch", value: "unit.cloud (Cloud-PBX Betrieb)" },
+      { category: "Zugang", label: "Admin-Login", value: "obh-pbx-admin" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{ADMIN_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "1 year ago", author: "michael", summary: "3CX-Telefonanlage für alle Standorte eingeführt, abgelöst frühere lokale Anlagen.", changes: [] },
+      {
+        revision: 2,
+        ago: "2 months ago",
+        author: "michael",
+        summary: "Wolfsburg als letzter Standort auf die zentrale Telefonanlage umgestellt.",
+        changes: [{ field: "Storage Role", from: "Telefonanlage für Potsdam, Berlin, Michendorf, Bad Belzig, Kleinmachnow, Werder (Havel)", to: "Telefonanlage für alle Standorte: Potsdam, Berlin, Michendorf, Bad Belzig, Kleinmachnow, Werder (Havel), Wolfsburg" }],
+      },
+    ],
+  },
+  {
+    slug: "vpn-gateway-oberlinhaus",
+    title: "vpn-gateway-oberlinhaus",
+    region: "unit.cloud Private Cloud — Netzwerk",
+    image: img("oberlinhaus-vpn-gateway"),
+    chapter: true,
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "pfSense (VM auf pve-unitcloud-potsdam-01)" },
+      { category: "Compute", label: "IP", value: "10.20.0.254" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Site-to-Site VPN — verbindet alle 7 Standorte mit dem unit.cloud Private Cloud Cluster" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.95%" },
+      { category: "Operations", label: "Betreut durch", value: "michi.ws (Netzwerk & Security)" },
+      { category: "Zugang", label: "Admin-Login", value: "obh-vpn-admin" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{ADMIN_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "2 years ago", author: "michael", summary: "VPN-Gateway für die ersten 5 Standorte eingerichtet.", changes: [] },
+      {
+        revision: 2,
+        ago: "10 months ago",
+        author: "michael",
+        summary: "Bad Belzig und Wolfsburg per Site-to-Site-Tunnel angebunden.",
+        changes: [{ field: "Storage Role", from: "Site-to-Site VPN — verbindet 5 Standorte mit dem unit.cloud Private Cloud Cluster", to: "Site-to-Site VPN — verbindet alle 7 Standorte mit dem unit.cloud Private Cloud Cluster" }],
+      },
+    ],
+  },
+  {
+    slug: "backup-dr-node-nuernberg",
+    title: "backup-dr-node-nuernberg",
+    region: "unit.cloud Private Cloud — Rechenzentrum Nürnberg (DR)",
+    image: img("oberlinhaus-dr-nuernberg"),
+    chapter: true,
+    warning:
+      "Failover-Ziel bei einem Ausfall des Rechenzentrums Frankfurt/Main. DR-Drills nur nach vorheriger Abstimmung mit michi.ws und dem unit.cloud NOC.",
+    baseDetails: [
+      { category: "Compute", label: "Environment", value: "unit.cloud Private Cloud (Proxmox VE 8, DR-Standort)" },
+      { category: "Compute", label: "IP", value: "10.30.0.1" },
+      { category: "Compute", label: "Instance Size", value: "1x AMD EPYC 7443P, 256GB RAM" },
+      { category: "Storage & Backup", label: "Attached Disk Size", value: "8TB NVMe RAID10" },
+      { category: "Storage & Backup", label: "Storage Role", value: "Offsite-Backup- und Failover-Replik für alle produktiven Oberlinhaus-Systeme" },
+      { category: "Storage & Backup", label: "Backup Frequency", value: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" },
+      { category: "Operations", label: "Uptime (90d)", value: "99.99%" },
+      { category: "Zugang", label: "Admin-Login", value: "obh-dr-admin" },
+      { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{ADMIN_HASH}}" },
+    ],
+    revisions: [
+      { revision: 1, ago: "1 year ago", author: "michael", summary: "DR-Standort Nürnberg in Betrieb genommen.", changes: [] },
+      {
+        revision: 2,
+        ago: "1 month ago",
+        author: "michael",
+        summary: "Von nächtlicher Replikation auf kontinuierliche Replikation umgestellt.",
+        changes: [{ field: "Backup Frequency", from: "Nightly Replikation von pve-unitcloud-potsdam-01", to: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" }],
+      },
+    ],
+  },
+];
+
 async function main() {
   console.log("Seeding NimbusVault...");
 
@@ -553,6 +806,8 @@ async function main() {
     { key: "barry", email: "barry@nimbusvault.io", displayName: "Barry Jenkins" },
     { key: "priya", email: "priya@nimbusvault.io", displayName: "Priya Anand" },
     { key: "marcus", email: "marcus@nimbusvault.io", displayName: "Marcus Lee" },
+    { key: "michael", email: "michael@michi.ws", displayName: "Michael Weber (michi.ws)" },
+    { key: "demo", email: "demo@nimbusvault.io", displayName: "Demo Account" },
   ] as const;
 
   const passwordHash = await hashPassword(DEMO_PASSWORD);
@@ -572,7 +827,7 @@ async function main() {
       slug: "internal-departments",
       title: "Internal Departments",
       description: "Cross-team operating docs for everyone at NimbusVault.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-shelf-departments/600/360",
+      imageUrl: serverImage("nimbusvault-shelf-departments", 600, 360),
     })
     .returning();
 
@@ -582,7 +837,17 @@ async function main() {
       slug: "product-engineering",
       title: "Product & Engineering",
       description: "How we build and ship the NimbusVault storage platform.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-shelf-eng/600/360",
+      imageUrl: serverImage("nimbusvault-shelf-eng", 600, 360),
+    })
+    .returning();
+
+  const [clients] = await db
+    .insert(shelves)
+    .values({
+      slug: "clients",
+      title: "Clients",
+      description: "Infrastructure documented on behalf of managed-service clients.",
+      imageUrl: serverImage("nimbusvault-shelf-clients", 600, 360),
     })
     .returning();
 
@@ -594,8 +859,21 @@ async function main() {
       title: "IT Department",
       description:
         "Server inventory, storage cluster topology, and infrastructure runbooks for the platform that keeps customer data safe.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-it-book/600/360",
+      imageUrl: serverImage("nimbusvault-it-book", 600, 360),
       pageCount: servers.length + contentPages.length,
+    })
+    .returning();
+
+  const [oberlinhausBook] = await db
+    .insert(books)
+    .values({
+      shelfId: clients.id,
+      slug: "oberlinhaus",
+      title: "Oberlinhaus (Potsdam / Berlin)",
+      description:
+        "Server and system landscape for Oberlinhaus, a diaconal provider of disability care, health, education, and vocational services across Potsdam, Berlin, and Brandenburg. Hosted on unit.cloud's private cloud, managed by michi.ws.",
+      imageUrl: serverImage("oberlinhaus-book", 600, 360),
+      pageCount: oberlinhausServers.length,
     })
     .returning();
 
@@ -605,7 +883,7 @@ async function main() {
       slug: "customer-success",
       title: "Customer Success Playbooks",
       description: "Onboarding, retention, and escalation guides for the CS team.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-cs-book/600/360",
+      imageUrl: serverImage("nimbusvault-cs-book", 600, 360),
       pageCount: 4,
     },
     {
@@ -613,7 +891,7 @@ async function main() {
       slug: "security-compliance",
       title: "Security & Compliance",
       description: "SOC 2, data residency, and encryption-at-rest policy documentation.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-security-book/600/360",
+      imageUrl: serverImage("nimbusvault-security-book", 600, 360),
       pageCount: 5,
     },
     {
@@ -621,7 +899,7 @@ async function main() {
       slug: "storage-architecture",
       title: "Storage Architecture",
       description: "Deep dives on our hot/warm/cold tiering and replication design.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-arch-book/600/360",
+      imageUrl: serverImage("nimbusvault-arch-book", 600, 360),
       pageCount: 7,
     },
     {
@@ -629,7 +907,7 @@ async function main() {
       slug: "disaster-recovery",
       title: "Disaster Recovery Playbooks",
       description: "Failover drills, RTO/RPO targets, and DR site procedures.",
-      imageUrl: "https://picsum.photos/seed/nimbusvault-dr-book/600/360",
+      imageUrl: serverImage("nimbusvault-dr-book", 600, 360),
       pageCount: 3,
     },
   ]);
@@ -639,48 +917,71 @@ async function main() {
     .values({ bookId: itDepartment.id, title: "Server Systems", sortOrder: 0 })
     .returning();
 
-  const allPageSpecs = [...servers, ...contentPages];
-  for (const spec of allPageSpecs) {
-    let cumulativeDetails = spec.baseDetails;
-    const firstRevision = spec.revisions[0];
-    const lastRevision = spec.revisions[spec.revisions.length - 1];
+  async function insertBookPages(bookId: string, chapterId: string | null, specs: PageSpec[]) {
+    for (const spec of specs) {
+      let cumulativeDetails = spec.baseDetails;
+      const firstRevision = spec.revisions[0];
+      const lastRevision = spec.revisions[spec.revisions.length - 1];
 
-    const [pageRow] = await db
-      .insert(pages)
-      .values({
-        bookId: itDepartment.id,
-        chapterId: spec.chapter ? serverSystemsChapter.id : null,
-        slug: spec.slug,
-        title: spec.title,
-        region: spec.region,
-        imageUrl: spec.image,
-        warning: spec.warning ?? null,
-        details: spec.baseDetails,
-        createdBy: userIds[firstRevision.author],
-        updatedBy: userIds[lastRevision.author],
-        currentRevision: lastRevision.revision,
-        createdAt: agoDate(firstRevision.ago),
-        updatedAt: agoDate(lastRevision.ago),
-      })
-      .returning();
+      const [pageRow] = await db
+        .insert(pages)
+        .values({
+          bookId,
+          chapterId: spec.chapter ? chapterId : null,
+          slug: spec.slug,
+          title: spec.title,
+          region: spec.region,
+          imageUrl: spec.image,
+          warning: spec.warning ?? null,
+          details: spec.baseDetails,
+          createdBy: userIds[firstRevision.author],
+          updatedBy: userIds[lastRevision.author],
+          currentRevision: lastRevision.revision,
+          createdAt: agoDate(firstRevision.ago),
+          updatedAt: agoDate(lastRevision.ago),
+        })
+        .returning();
 
-    for (const rev of spec.revisions) {
-      cumulativeDetails = applyChanges(cumulativeDetails, rev.changes);
-      await db.insert(pageRevisions).values({
-        pageId: pageRow.id,
-        revisionNo: rev.revision,
-        authorId: userIds[rev.author],
-        summary: rev.summary,
-        detailsSnapshot: cumulativeDetails,
-        changes: rev.changes.map(({ field, from, to }) => ({ field, from, to })),
-        createdAt: agoDate(rev.ago),
-      });
+      for (const rev of spec.revisions) {
+        cumulativeDetails = applyChanges(cumulativeDetails, rev.changes);
+        await db.insert(pageRevisions).values({
+          pageId: pageRow.id,
+          revisionNo: rev.revision,
+          authorId: userIds[rev.author],
+          summary: rev.summary,
+          detailsSnapshot: cumulativeDetails,
+          changes: rev.changes.map(({ field, from, to }) => ({ field, from, to })),
+          createdAt: agoDate(rev.ago),
+        });
+      }
+
+      await db.update(pages).set({ details: cumulativeDetails }).where(eq(pages.id, pageRow.id));
     }
-
-    await db.update(pages).set({ details: cumulativeDetails }).where(eq(pages.id, pageRow.id));
   }
 
-  console.log(`Inserted ${allPageSpecs.length} pages across 1 chapter, with full revision history.`);
+  const allPageSpecs = [...servers, ...contentPages];
+  await insertBookPages(itDepartment.id, serverSystemsChapter.id, allPageSpecs);
+
+  const [oberlinhausChapter] = await db
+    .insert(chapters)
+    .values({ bookId: oberlinhausBook.id, title: "Server & Systeme", sortOrder: 0 })
+    .returning();
+
+  // Mock credential hashes for the Oberlinhaus demo case — real argon2id hashes of clearly
+  // fictional demo-only passwords, never used by any actual system.
+  const adminHash = await hashPassword("Obh-Admin-Demo-Only-2026!");
+  const serviceHash = await hashPassword("Obh-Service-Demo-Only-2026!");
+  const withMockHashes = oberlinhausServers.map((spec) => ({
+    ...spec,
+    baseDetails: spec.baseDetails.map((d) => ({
+      ...d,
+      value: d.value.replace("{{ADMIN_HASH}}", adminHash).replace("{{SERVICE_HASH}}", serviceHash),
+    })),
+  }));
+
+  await insertBookPages(oberlinhausBook.id, oberlinhausChapter.id, withMockHashes);
+
+  console.log(`Inserted ${allPageSpecs.length + oberlinhausServers.length} pages across 2 books, with full revision history.`);
   console.log("Seed complete.");
   process.exit(0);
 }

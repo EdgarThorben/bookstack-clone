@@ -4,10 +4,17 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { books, pageRevisions, pages } from "../db/schema";
 import type { PageDetail } from "../db/schema";
-import { requireUser } from "../lib/auth";
+import type { SessionUser } from "../lib/auth";
 import { diffDetails } from "../lib/diff";
 import { getItDepartmentNav, getPageBySlug } from "../lib/queries";
 import { slugify } from "../lib/slug";
+
+function requireUser(locals: App.Locals): SessionUser {
+  if (!locals.user) {
+    throw new ActionError({ code: "UNAUTHORIZED", message: "You must be logged in to do that." });
+  }
+  return locals.user;
+}
 
 const detailRowSchema = z.object({
   category: z.string().min(1),

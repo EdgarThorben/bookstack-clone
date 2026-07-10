@@ -877,6 +877,28 @@ hr.thin {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
 }
 
+.demo-login-button {
+  width: 100%;
+  margin: 1rem 0 1.2rem;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1.2rem;
+  color: var(--bs-muted);
+  font-size: 0.8rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--bs-border);
+}
+
 .login-card h1 {
   font-size: 1.4rem;
   margin: 0 0 0.6rem;
