@@ -6,6 +6,7 @@ export interface Crumb {
 }
 
 export function breadcrumbForPage(opts: {
+  shelvesLabel?: string;
   shelfTitle: string;
   shelfSlug: string;
   bookTitle: string;
@@ -14,7 +15,7 @@ export function breadcrumbForPage(opts: {
   pageTitle: string;
 }): Crumb[] {
   const items: Crumb[] = [
-    { label: "Shelves", href: "/", icon: "shelf" },
+    { label: opts.shelvesLabel ?? "Shelves", href: "/", icon: "shelf" },
     { label: opts.shelfTitle, href: `/shelves/${opts.shelfSlug}`, icon: "shelf" },
     { label: opts.bookTitle, href: `/books/${opts.bookSlug}`, icon: "book" },
   ];

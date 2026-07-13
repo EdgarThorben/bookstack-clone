@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly DATABASE_URL: string;
+  readonly CREDENTIALS_ENCRYPTION_KEY: string;
 }
 
 declare namespace App {
@@ -11,5 +12,6 @@ declare namespace App {
       email: string;
       displayName: string;
     } | null;
+    lang: import("./lib/i18n").Lang;
   }
 }

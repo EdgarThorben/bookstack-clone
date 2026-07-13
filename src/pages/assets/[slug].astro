@@ -7,10 +7,11 @@ import { actions } from "astro:actions";
 import { getAssetBySlug, getAssetRelationships, listAssets } from "../../lib/assetQueries";
 import { getCredentialsForAsset } from "../../lib/credentialQueries";
 import { groupDetailsByCategory } from "../../lib/details";
-import { formatAssetLabel } from "../../lib/assetLabels";
 import { formatRelativeTime } from "../../lib/time";
 import { relationshipTypes } from "../../db/schema";
+import { t, tAssetType, tRelationshipType } from "../../lib/i18n";
 
+const lang = Astro.locals.lang;
 const { slug } = Astro.params;
 const asset = slug ? await getAssetBySlug(slug) : null;
 
@@ -36,8 +37,8 @@ const otherAssets = (await listAssets()).filter((a) => a.id !== asset.id);
 const credentialItems = await getCredentialsForAsset(asset.id);
 
 const breadcrumbItems = [
-  { label: "Shelves", href: "/", icon: "shelf" },
-  { label: "Assets", href: "/assets", icon: "book" },
+  { label: t(lang, "nav.shelves"), href: "/", icon: "shelf" },
+  { label: t(lang, "asset.title"), href: "/assets", icon: "book" },
   { label: asset.name, href: "", icon: "page", current: true },
 ];
 ---
@@ -48,17 +49,17 @@ const breadcrumbItems = [
     <main class="bs-content">
       <h1>
         {asset.name}
-        {asset.status === "decommissioned" && <span class="asset-status-badge">Decommissioned</span>}
+        {asset.status === "decommissioned" && <span class="asset-status-badge">{t(lang, "asset.decommissioned")}</span>}
       </h1>
-      <p style="color:var(--bs-muted);">{formatAssetLabel(asset.type)}</p>
+      <p style="color:var(--bs-muted);">{tAssetType(lang, asset.type)}</p>
 
-      <h2>Fields</h2>
-      {categories.length === 0 && <p class="no-changes">No fields recorded yet.</p>}
+      <h2>{t(lang, "asset.fields")}</h2>
+      {categories.length === 0 && <p class="no-changes">{t(lang, "asset.noFields")}</p>}
       {
         categories.map((group) => (
           <details class="category-details" open>
             <summary>
-              {group.category || "General"} <span class="cat-count">({group.items.length})</span>
+              {group.category || t(lang, "asset.general")} <span class="cat-count">({group.items.length})</span>
             </summary>
             <div class="table-scroll">
               <table class="detail-table">
@@ -76,29 +77,29 @@ const breadcrumbItems = [
         ))
       }
 
-      <h2>Relationships</h2>
+      <h2>{t(lang, "asset.relationships")}</h2>
       {(relateResult?.error) && <p class="login-error">{relateResult.error.message}</p>}
 
-      <h3>Depends on / points to</h3>
-      {outgoing.length === 0 && <p class="no-changes">No outgoing relationships.</p>}
+      <h3>{t(lang, "asset.outgoing")}</h3>
+      {outgoing.length === 0 && <p class="no-changes">{t(lang, "asset.noOutgoing")}</p>}
       <ul class="relationship-list">
         {outgoing.map((r) => (
           <li>
-            <span class="rel-type">{formatAssetLabel(r.relationshipType)}</span>
+            <span class="rel-type">{tRelationshipType(lang, r.relationshipType)}</span>
             <a href={`/assets/${r.relatedAsset.slug}`}>{r.relatedAsset.name}</a>
-            <span style="color:var(--bs-muted); font-size:0.85rem;">({formatAssetLabel(r.relatedAsset.type)})</span>
+            <span style="color:var(--bs-muted); font-size:0.85rem;">({tAssetType(lang, r.relatedAsset.type)})</span>
           </li>
         ))}
       </ul>
 
-      <h3>Referenced by</h3>
-      {incoming.length === 0 && <p class="no-changes">Nothing points to this asset.</p>}
+      <h3>{t(lang, "asset.incoming")}</h3>
+      {incoming.length === 0 && <p class="no-changes">{t(lang, "asset.noIncoming")}</p>}
       <ul class="relationship-list">
         {incoming.map((r) => (
           <li>
             <a href={`/assets/${r.sourceAsset.slug}`}>{r.sourceAsset.name}</a>
-            <span class="rel-type">{formatAssetLabel(r.relationshipType)}</span>
-            <span style="color:var(--bs-muted); font-size:0.85rem;">this asset</span>
+            <span class="rel-type">{tRelationshipType(lang, r.relationshipType)}</span>
+            <span style="color:var(--bs-muted); font-size:0.85rem;">{t(lang, "asset.thisAsset")}</span>
           </li>
         ))}
       </ul>
@@ -108,16 +109,16 @@ const breadcrumbItems = [
           <form class="relate-form" method="POST" action={actions.addAssetRelationship}>
             <input type="hidden" name="assetSlug" value={asset.slug} />
             <select name="relationshipType" required>
-              {relationshipTypes.map((t) => (
-                <option value={t}>{formatAssetLabel(t)}</option>
+              {relationshipTypes.map((rt) => (
+                <option value={rt}>{tRelationshipType(lang, rt)}</option>
               ))}
             </select>
             <select name="relatedAssetSlug" required>
               {otherAssets.map((a) => (
-                <option value={a.slug}>{a.name} ({formatAssetLabel(a.type)})</option>
+                <option value={a.slug}>{a.name} ({tAssetType(lang, a.type)})</option>
               ))}
             </select>
-            <button type="submit" class="secondary-button">+ Add Relationship</button>
+            <button type="submit" class="secondary-button">{t(lang, "asset.addRelationship")}</button>
           </form>
         )
       }
@@ -130,9 +131,9 @@ const breadcrumbItems = [
       <DetailsPanel
         revision={asset.currentRevision}
         createdBy={asset.createdByName}
-        createdAgo={formatRelativeTime(asset.createdAt)}
+        createdAgo={formatRelativeTime(asset.createdAt, lang)}
         updatedBy={asset.updatedByName}
-        updatedAgo={formatRelativeTime(asset.updatedAt)}
+        updatedAgo={formatRelativeTime(asset.updatedAt, lang)}
         revisionsHref={`/assets/${asset.slug}/revisions`}
         editHref={Astro.locals.user ? `/assets/${asset.slug}/edit` : undefined}
         exportData={asset.fields}
@@ -143,7 +144,7 @@ const breadcrumbItems = [
         Astro.locals.user && asset.status === "active" && (
           <form method="POST" action={actions.decommissionAsset} style="margin-top:1rem;">
             <input type="hidden" name="slug" value={asset.slug} />
-            <button type="submit" class="secondary-button">Decommission Asset</button>
+            <button type="submit" class="secondary-button">{t(lang, "asset.decommissionButton")}</button>
           </form>
         )
       }

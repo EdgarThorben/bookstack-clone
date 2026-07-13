@@ -1,4 +1,6 @@
 ---
+import { t } from "../lib/i18n";
+
 interface DetailRow {
   category: string;
   label: string;
@@ -13,21 +15,22 @@ interface Props {
 const { initialDetails = [], fieldName = "details" } = Astro.props;
 const seedRows = initialDetails.length > 0 ? initialDetails : [{ category: "", label: "", value: "" }];
 const initialJson = JSON.stringify(seedRows);
+const lang = Astro.locals.lang;
 ---
 
-<div class="detail-rows-editor" data-initial={initialJson}>
+<div class="detail-rows-editor" data-initial={initialJson} data-remove-label={t(lang, "detailRows.remove")}>
   <table class="detail-table" id="detail-rows-table">
     <thead>
       <tr>
-        <th>Category</th>
-        <th>Label</th>
-        <th>Value</th>
+        <th>{t(lang, "detailRows.category")}</th>
+        <th>{t(lang, "detailRows.label")}</th>
+        <th>{t(lang, "detailRows.value")}</th>
         <th></th>
       </tr>
     </thead>
     <tbody id="detail-rows-body"></tbody>
   </table>
-  <button type="button" id="add-detail-row" class="secondary-button">+ Add field</button>
+  <button type="button" id="add-detail-row" class="secondary-button">{t(lang, "detailRows.addField")}</button>
   <input type="hidden" name={fieldName} id="details-json" />
 </div>
 
@@ -45,6 +48,7 @@ const initialJson = JSON.stringify(seedRows);
 
   if (container && body && hiddenInput && addButton) {
     const initial: DetailRow[] = JSON.parse(container.getAttribute("data-initial") || "[]");
+    const removeLabel = container.getAttribute("data-remove-label") || "Remove";
 
     const escapeAttr = (value: string) =>
       value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -66,7 +70,7 @@ const initialJson = JSON.stringify(seedRows);
         <td><input type="text" class="row-category" placeholder="Compute" value="${escapeAttr(row.category)}" /></td>
         <td><input type="text" class="row-label" placeholder="RAM" value="${escapeAttr(row.label)}" /></td>
         <td><input type="text" class="row-value" placeholder="16GB" value="${escapeAttr(row.value)}" /></td>
-        <td><button type="button" class="remove-row secondary-button">Remove</button></td>
+        <td><button type="button" class="remove-row secondary-button">${removeLabel}</button></td>
       `;
       tr.querySelector(".remove-row")?.addEventListener("click", () => {
         tr.remove();

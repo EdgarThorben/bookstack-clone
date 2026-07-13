@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import { actions } from "astro:actions";
 import { site } from "../config";
+import { t } from "../lib/i18n";
 
 interface Props {
   title: string;
@@ -9,9 +10,14 @@ interface Props {
 
 const { title } = Astro.props;
 const user = Astro.locals.user;
+const lang = Astro.locals.lang;
+
+const currentUrl = new URL(Astro.request.url);
+currentUrl.searchParams.set("setLang", lang === "en" ? "de" : "en");
+const langToggleHref = currentUrl.pathname + currentUrl.search;
 ---
 
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,23 +35,31 @@ const user = Astro.locals.user;
         {site.name}
       </a>
       <div class="search" id="site-search">
-        <input type="search" placeholder="Search" id="site-search-input" autocomplete="off" />
-        <div class="search-results" id="site-search-results" hidden></div>
+        <input type="search" placeholder={t(lang, "search.placeholder")} id="site-search-input" autocomplete="off" />
+        <div
+          class="search-results"
+          id="site-search-results"
+          data-no-matches={t(lang, "search.noMatches")}
+          hidden
+        ></div>
       </div>
       <nav>
-        <a href="/">Shelves</a>
-        <a href="/books">Books</a>
-        <a href="/assets">Assets</a>
+        <a href="/">{t(lang, "nav.shelves")}</a>
+        <a href="/books">{t(lang, "nav.books")}</a>
+        <a href="/assets">{t(lang, "nav.assets")}</a>
+        <a href={langToggleHref} class="lang-toggle" title="English / Deutsch">
+          {lang === "en" ? "DE" : "EN"}
+        </a>
         {
           user ? (
             <span class="auth-status">
-              Signed in as {user.displayName}
+              {t(lang, "nav.signedInAs")} {user.displayName}
               <form method="POST" action={actions.logout} class="logout-form">
-                <button type="submit" class="logout-button">Log out</button>
+                <button type="submit" class="logout-button">{t(lang, "nav.logout")}</button>
               </form>
             </span>
           ) : (
-            <a href="/login">Log in</a>
+            <a href="/login">{t(lang, "nav.login")}</a>
           )
         }
       </nav>
@@ -54,6 +68,7 @@ const user = Astro.locals.user;
     <script>
       const input = document.getElementById("site-search-input") as HTMLInputElement;
       const results = document.getElementById("site-search-results") as HTMLDivElement;
+      const noMatchesText = results.dataset.noMatches ?? "No matches found.";
       let index: { title: string; url: string; type: string; excerpt: string }[] | null = null;
       let activeIndex = -1;
 
@@ -68,7 +83,7 @@ const user = Astro.locals.user;
         results.innerHTML = "";
         activeIndex = -1;
         if (matches.length === 0) {
-          results.innerHTML = '<div class="search-empty">No matches found.</div>';
+          results.innerHTML = `<div class="search-empty">${noMatchesText}</div>`;
           results.hidden = false;
           return;
         }

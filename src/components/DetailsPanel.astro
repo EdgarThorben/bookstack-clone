@@ -1,5 +1,6 @@
 ---
 import type { PageDetail } from "../db/schema";
+import { t } from "../lib/i18n";
 
 interface Props {
   revision: number;
@@ -27,6 +28,8 @@ const {
   exportTitle,
 } = Astro.props;
 
+const lang = Astro.locals.lang;
+
 function toCsv(data: PageDetail[]) {
   const rows = [["Field", "Value"], ...data.map((d) => [d.label, d.value])];
   return rows
@@ -52,28 +55,28 @@ const mdHref = `data:text/markdown;charset=utf-8,${encodeURIComponent(toMarkdown
 ---
 
 <div class="details-panel">
-  <h4>Details</h4>
+  <h4>{t(lang, "details.heading")}</h4>
   <ul>
-    <li><span class="dot">&#8635;</span> Revision #{revision}</li>
-    <li><span class="dot">&#9733;</span> Created {createdAgo} by {createdBy}</li>
-    <li><span class="dot">&#9998;</span> Updated {updatedAgo} by {updatedBy}</li>
+    <li><span class="dot">&#8635;</span> {t(lang, "details.revision")} #{revision}</li>
+    <li><span class="dot">&#9733;</span> {t(lang, "details.created")} {createdAgo} {t(lang, "details.by")} {createdBy}</li>
+    <li><span class="dot">&#9998;</span> {t(lang, "details.updated")} {updatedAgo} {t(lang, "details.by")} {updatedBy}</li>
   </ul>
-  <h4>Actions</h4>
+  <h4>{t(lang, "details.actions")}</h4>
   <div class="actions">
     {editHref && (
       <>
-        <a href={editHref}><span class="dot">&#9998;</span> Edit</a>
+        <a href={editHref}><span class="dot">&#9998;</span> {t(lang, "details.edit")}</a>
         <hr class="thin" />
       </>
     )}
-    <a href={revisionsHref}><span class="dot">&#8635;</span> Revisions</a>
+    <a href={revisionsHref}><span class="dot">&#8635;</span> {t(lang, "details.revisions")}</a>
     <hr class="thin" />
     <details class="export-menu">
-      <summary><span class="dot">&#8615;</span> Export</summary>
+      <summary><span class="dot">&#8615;</span> {t(lang, "details.export")}</summary>
       <div class="export-options">
-        <a download={`${exportFilename}.csv`} href={csvHref}>Export as CSV</a>
-        <a download={`${exportFilename}.json`} href={jsonHref}>Export as JSON</a>
-        <a download={`${exportFilename}.md`} href={mdHref}>Export as Markdown</a>
+        <a download={`${exportFilename}.csv`} href={csvHref}>{t(lang, "details.exportCsv")}</a>
+        <a download={`${exportFilename}.json`} href={jsonHref}>{t(lang, "details.exportJson")}</a>
+        <a download={`${exportFilename}.md`} href={mdHref}>{t(lang, "details.exportMarkdown")}</a>
       </div>
     </details>
   </div>

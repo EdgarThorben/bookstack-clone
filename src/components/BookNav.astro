@@ -1,4 +1,6 @@
 ---
+import { t } from "../lib/i18n";
+
 interface NavPage {
   slug: string;
   title: string;
@@ -14,13 +16,14 @@ interface Props {
 }
 
 const { bookTitle, bookHref, chapterTitle, chapterPages, otherPages, activeSlug } = Astro.props;
+const lang = Astro.locals.lang;
 ---
 
 <div class="book-nav">
   <a class="book-title" href={bookHref}>{bookTitle}</a>
   <div class="chapter">
     <a class="chapter-title" href={bookHref}>▸ {chapterTitle}</a>
-    <div class="page-count">{chapterPages.length} Pages</div>
+    <div class="page-count">{chapterPages.length} {t(lang, "bookNav.pages")}</div>
     <ul>
       {
         chapterPages.map((p) => (

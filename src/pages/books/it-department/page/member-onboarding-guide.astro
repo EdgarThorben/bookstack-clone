@@ -6,7 +6,9 @@ import DetailsPanel from "../../../../components/DetailsPanel.astro";
 import { getItDepartmentNav, getPageBySlug } from "../../../../lib/queries";
 import { breadcrumbForPage } from "../../../../lib/breadcrumbs";
 import { formatRelativeTime } from "../../../../lib/time";
+import { t } from "../../../../lib/i18n";
 
+const lang = Astro.locals.lang;
 const nav = await getItDepartmentNav();
 const page = await getPageBySlug("member-onboarding-guide");
 
@@ -20,25 +22,26 @@ if (!page) {
 <BookStackLayout title="Member Onboarding Guide">
   <Breadcrumb
     items={breadcrumbForPage({
+      shelvesLabel: t(lang, "nav.shelves"),
       shelfTitle: nav.shelf.title,
       shelfSlug: nav.shelf.slug,
       bookTitle: nav.book.title,
       bookSlug: nav.book.slug,
-      pageTitle: "Member Onboarding Guide",
+      pageTitle: t(lang, "onboarding.title"),
     })}
   />
   <div class="bs-layout">
     <aside class="bs-side">
-      <h4>Page Navigation</h4>
+      <h4>{t(lang, "page.pageNav")}</h4>
       <ul class="page-nav-list">
-        <li><a href="#checklist" class="active">Checklist</a></li>
-        <li><a href="#resources">Resources</a></li>
+        <li><a href="#checklist" class="active">{t(lang, "onboarding.navChecklist")}</a></li>
+        <li><a href="#resources">{t(lang, "onboarding.navResources")}</a></li>
       </ul>
-      <h4>Book Navigation</h4>
+      <h4>{t(lang, "page.bookNav")}</h4>
       <BookNav
         bookTitle={nav.book.title}
         bookHref={`/books/${nav.book.slug}`}
-        chapterTitle={nav.chapter?.title ?? "Server Systems"}
+        chapterTitle={nav.chapter?.title ?? t(lang, "itDept.chapterFallback")}
         chapterPages={nav.chapterPages}
         otherPages={nav.otherPages}
         activeSlug="member-onboarding-guide"
@@ -46,20 +49,16 @@ if (!page) {
     </aside>
 
     <main class="bs-content">
-      <h1>Member Onboarding Guide</h1>
-      <p>
-        Welcome to the IT Department at NimbusVault. This guide walks new engineers through
-        their first two weeks getting familiar with the storage platform that keeps our
-        customers' data safe, durable, and fast to retrieve.
-      </p>
+      <h1>{t(lang, "onboarding.title")}</h1>
+      <p>{t(lang, "onboarding.intro")}</p>
 
-      <h2 id="checklist">Checklist</h2>
+      <h2 id="checklist">{t(lang, "onboarding.checklist")}</h2>
       <div class="table-scroll">
         <table class="detail-table">
           <thead>
             <tr>
-              <th>Task</th>
-              <th>Owner &amp; Due</th>
+              <th>{t(lang, "onboarding.task")}</th>
+              <th>{t(lang, "onboarding.ownerDue")}</th>
             </tr>
           </thead>
           <tbody>
@@ -75,11 +74,11 @@ if (!page) {
         </table>
       </div>
 
-      <h2 id="resources">Resources</h2>
+      <h2 id="resources">{t(lang, "onboarding.resources")}</h2>
       <ul>
-        <li>Storage Architecture book — tiering, replication, and encryption design</li>
-        <li>Server Systems chapter — live inventory of every node hosting customer data</li>
-        <li>Disaster Recovery Playbooks — failover drills and RTO/RPO targets</li>
+        <li>{t(lang, "onboarding.resource1")}</li>
+        <li>{t(lang, "onboarding.resource2")}</li>
+        <li>{t(lang, "onboarding.resource3")}</li>
       </ul>
     </main>
 
@@ -87,9 +86,9 @@ if (!page) {
       <DetailsPanel
         revision={page.currentRevision}
         createdBy={page.createdByName}
-        createdAgo={formatRelativeTime(page.createdAt)}
+        createdAgo={formatRelativeTime(page.createdAt, lang)}
         updatedBy={page.updatedByName}
-        updatedAgo={formatRelativeTime(page.updatedAt)}
+        updatedAgo={formatRelativeTime(page.updatedAt, lang)}
         revisionsHref={`/books/it-department/page/${page.slug}/revisions`}
         editHref={Astro.locals.user ? `/books/it-department/page/${page.slug}/edit` : undefined}
         exportData={page.details}

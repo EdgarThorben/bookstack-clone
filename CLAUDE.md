@@ -24,6 +24,14 @@ Not built — do not assume these exist: signup/registration, account settings, 
 - **Credentials encryption (confirmed 2026-07-14):** secrets are encrypted app-side with AES-256-GCM (Node `crypto`), key from an env var (Vercel/Neon env, not committed). Per-record IV. Do not add pgcrypto or an external secrets manager — this was decided against in favor of the existing stack.
 - **Credentials access control (confirmed 2026-07-14):** masked-by-default, reveal-on-demand, every reveal audit-logged (who/what/when). Any logged-in user may reveal — do not build per-user/role grants for this; that would pull in full RBAC, which stays out of scope unless separately requested.
 
+## i18n (confirmed 2026-07-14)
+
+- English/German toggle, cookie-based (`nimbusvault_lang`), no route prefixes (`astro:i18n` routing was not used — see `src/middleware.ts` and `src/lib/i18n.ts`). Toggle link lives in `BookStackLayout.astro`'s nav, sets the cookie via a `?setLang=de|en` query param the middleware intercepts and redirects away.
+- Translated: all static UI chrome (nav, labels, buttons, empty states, breadcrumb static segments, the fixed `assetTypes`/`relationshipTypes` enum labels, and the 3 custom-content pages' hardcoded prose in `books/it-department/page/{member-onboarding-guide,it-holiday-party-event,server-outage-plan}.astro`) and `formatRelativeTime()`.
+- **Not translated, by design:** seeded/user-entered database content — shelf/book/page titles & descriptions, asset field categories/labels/values, credential labels. Translating that would mean either a dual-language content model or a live translation service, neither of which was requested. If real multi-language *content* is wanted later, that's a separate, bigger feature — don't conflate it with the UI-chrome toggle.
+- Add new UI strings to `src/lib/i18n.ts`'s `dict` (both `en` and `de` keys), then call `t(lang, "key")` — `lang` comes from `Astro.locals.lang`, available in every `.astro` file's frontmatter (including nested components) since middleware sets it per-request.
+- `DetailRowsEditor.astro` and `CredentialsPanel.astro` have client-side `<script>` blocks that need translated strings too (e.g. the "Remove"/"Reveal"/"Hide" button text) — pass them via `data-*` attributes read in the script, not `define:vars` (that strips TypeScript support from the script and breaks the existing typed code).
+
 ## Out of scope unless explicitly requested
 
 Network discovery/scanning, multi-tenancy, granular RBAC beyond "logged in or not", self-service signup.

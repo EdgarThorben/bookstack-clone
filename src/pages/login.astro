@@ -1,6 +1,9 @@
 ---
 import BookStackLayout from "../layouts/BookStackLayout.astro";
 import { actions } from "astro:actions";
+import { t } from "../lib/i18n";
+
+const lang = Astro.locals.lang;
 
 const loginResult = Astro.getActionResult(actions.login);
 const demoResult = Astro.getActionResult(actions.demoLogin);
@@ -14,16 +17,16 @@ if (result && !result.error) {
 <BookStackLayout title="Log in">
   <div class="login-wrap">
     <div class="login-card">
-      <h1>Log in to NimbusVault</h1>
+      <h1>{t(lang, "login.title")}</h1>
 
       <form method="POST" action={actions.demoLogin}>
-        <button type="submit" class="primary-button demo-login-button">View Demo — no login required</button>
+        <button type="submit" class="primary-button demo-login-button">{t(lang, "login.demoButton")}</button>
       </form>
 
-      <div class="login-divider"><span>or sign in with a demo account</span></div>
+      <div class="login-divider"><span>{t(lang, "login.divider")}</span></div>
 
       <p class="login-note">
-        Every demo user shares the password
+        {t(lang, "login.note")}
         <code>NimbusDemo!2024</code> — try <code>priya@nimbusvault.io</code>,
         <code>barry@nimbusvault.io</code>, or <code>marcus@nimbusvault.io</code>.
       </p>
@@ -34,16 +37,16 @@ if (result && !result.error) {
       }
       <form class="login-form" method="POST" action={actions.login}>
         <label>
-          Email
+          {t(lang, "login.email")}
           <input type="email" name="email" placeholder="you@nimbusvault.io" required />
         </label>
         <label>
-          Password
+          {t(lang, "login.password")}
           <input type="password" name="password" placeholder="••••••••" required />
         </label>
-        <button type="submit">Log in</button>
+        <button type="submit">{t(lang, "login.submit")}</button>
       </form>
-      <a class="back-link" href="/">&larr; Back to Shelves</a>
+      <a class="back-link" href="/">{t(lang, "login.backLink")}</a>
     </div>
   </div>
 </BookStackLayout>

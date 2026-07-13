@@ -3,7 +3,9 @@ import BookStackLayout from "../../../../../layouts/BookStackLayout.astro";
 import Breadcrumb from "../../../../../components/Breadcrumb.astro";
 import { getPageRevisions } from "../../../../../lib/queries";
 import { formatRelativeTime } from "../../../../../lib/time";
+import { t } from "../../../../../lib/i18n";
 
+const lang = Astro.locals.lang;
 const { slug } = Astro.params;
 const result = slug ? await getPageRevisions(slug) : null;
 
@@ -16,30 +18,29 @@ const { title, revisions } = result;
 const backHref = `/books/oberlinhaus/page/${slug}`;
 
 const breadcrumbItems = [
-  { label: "Shelves", href: "/", icon: "shelf" },
-  { label: "Clients", href: "/shelves/clients", icon: "shelf" },
+  { label: t(lang, "nav.shelves"), href: "/", icon: "shelf" },
+  { label: t(lang, "shelf.clients"), href: "/shelves/clients", icon: "shelf" },
   { label: "Oberlinhaus (Potsdam / Berlin)", href: "/books/oberlinhaus", icon: "book" },
   { label: title, href: backHref, icon: "page" },
-  { label: "Revisions", href: "", icon: "page", current: true },
+  { label: t(lang, "details.revisions"), href: "", icon: "page", current: true },
 ];
 ---
 
 <BookStackLayout title={`Revisions — ${title}`}>
   <Breadcrumb items={breadcrumbItems} />
   <div class="home-wrap">
-    <h1>Revisions</h1>
+    <h1>{t(lang, "revisions.title")}</h1>
     <p style="color:var(--bs-muted); margin-bottom:1.5rem;">
-      Revision history for <a href={backHref}>{title}</a>. Expand a revision to see exactly what
-      changed.
+      {t(lang, "revisions.intro")} <a href={backHref}>{title}</a>. {t(lang, "revisions.introEnd")}
     </p>
 
     {
       revisions.map((rev, i) => (
         <details class="revision-block" open={i === 0}>
           <summary>
-            <span class="rev-num">Revision #{rev.revisionNo}</span>
+            <span class="rev-num">{t(lang, "details.revision")} #{rev.revisionNo}</span>
             <span class="rev-meta">
-              {formatRelativeTime(rev.createdAt)} by {rev.authorName ?? "Unknown"}
+              {formatRelativeTime(rev.createdAt, lang)} {t(lang, "details.by")} {rev.authorName ?? t(lang, "common.unknown")}
             </span>
             <span class="rev-summary">{rev.summary}</span>
           </summary>
@@ -48,9 +49,9 @@ const breadcrumbItems = [
               <table class="detail-table">
                 <thead>
                   <tr>
-                    <th>Field</th>
-                    <th>Previous Value</th>
-                    <th>New Value</th>
+                    <th>{t(lang, "revisions.field")}</th>
+                    <th>{t(lang, "revisions.previous")}</th>
+                    <th>{t(lang, "revisions.new")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -65,12 +66,12 @@ const breadcrumbItems = [
               </table>
             </div>
           ) : (
-            <p class="no-changes">No field changes — this was the initial version of the page.</p>
+            <p class="no-changes">{t(lang, "revisions.noChangesPage")}</p>
           )}
         </details>
       ))
     }
 
-    <a class="back-link" href={backHref}>&larr; Back to {title}</a>
+    <a class="back-link" href={backHref}>{t(lang, "revisions.back")} {title}</a>
   </div>
 </BookStackLayout>

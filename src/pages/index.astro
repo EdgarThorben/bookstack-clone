@@ -4,7 +4,9 @@ import { getShelves, getItDepartmentNav } from "../lib/queries";
 import { db } from "../db/client";
 import { pages, books } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { t } from "../lib/i18n";
 
+const lang = Astro.locals.lang;
 const shelves = await getShelves();
 
 const itDeptPages = await db
@@ -24,26 +26,26 @@ const totalStorageTB = itDeptPages.reduce((sum, p) => {
 
 <BookStackLayout title="Shelves">
   <div class="home-hero">
-    <h1>NimbusVault Knowledge Base</h1>
-    <p>Everything the team needs to know about how we store, protect, and serve customer data.</p>
+    <h1>{t(lang, "home.title")}</h1>
+    <p>{t(lang, "home.tagline")}</p>
   </div>
 
   <div class="stat-strip">
     <div class="stat-box">
       <div class="num">{chapterPages.length}</div>
-      <div class="lbl">Tracked Servers</div>
+      <div class="lbl">{t(lang, "home.statServers")}</div>
     </div>
     <div class="stat-box">
       <div class="num">{totalStorageTB.toFixed(1)}TB</div>
-      <div class="lbl">Customer Data Hosted</div>
+      <div class="lbl">{t(lang, "home.statStorage")}</div>
     </div>
     <div class="stat-box">
       <div class="num">99.94%</div>
-      <div class="lbl">Avg. 90-day Uptime</div>
+      <div class="lbl">{t(lang, "home.statUptime")}</div>
     </div>
     <div class="stat-box">
       <div class="num">5</div>
-      <div class="lbl">Regions Online</div>
+      <div class="lbl">{t(lang, "home.statRegions")}</div>
     </div>
   </div>
 
@@ -61,7 +63,7 @@ const totalStorageTB = itDeptPages.reduce((sum, p) => {
                 <img class="cover-image" src={book.imageUrl} alt={`${book.title} cover`} />
                 <span class="card-title">{book.title}</span>
                 <p>{book.description}</p>
-                <div class="card-meta">&#128214; {book.pageCount} pages</div>
+                <div class="card-meta">&#128214; {book.pageCount} {t(lang, "books.pages")}</div>
               </a>
             ))}
           </div>
