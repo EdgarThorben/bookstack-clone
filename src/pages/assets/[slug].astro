@@ -2,8 +2,10 @@
 import BookStackLayout from "../../layouts/BookStackLayout.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
 import DetailsPanel from "../../components/DetailsPanel.astro";
+import CredentialsPanel from "../../components/CredentialsPanel.astro";
 import { actions } from "astro:actions";
 import { getAssetBySlug, getAssetRelationships, listAssets } from "../../lib/assetQueries";
+import { getCredentialsForAsset } from "../../lib/credentialQueries";
 import { groupDetailsByCategory } from "../../lib/details";
 import { formatAssetLabel } from "../../lib/assetLabels";
 import { formatRelativeTime } from "../../lib/time";
@@ -19,13 +21,19 @@ if (!asset) {
 
 const relateResult = Astro.getActionResult(actions.addAssetRelationship);
 const decommissionResult = Astro.getActionResult(actions.decommissionAsset);
-if ((relateResult && !relateResult.error) || (decommissionResult && !decommissionResult.error)) {
+const credentialResult = Astro.getActionResult(actions.createCredential);
+if (
+  (relateResult && !relateResult.error) ||
+  (decommissionResult && !decommissionResult.error) ||
+  (credentialResult && !credentialResult.error)
+) {
   return Astro.redirect(`/assets/${asset.slug}`);
 }
 
 const categories = groupDetailsByCategory(asset.fields);
 const { outgoing, incoming } = await getAssetRelationships(asset.id);
 const otherAssets = (await listAssets()).filter((a) => a.id !== asset.id);
+const credentialItems = await getCredentialsForAsset(asset.id);
 
 const breadcrumbItems = [
   { label: "Shelves", href: "/", icon: "shelf" },
@@ -113,6 +121,9 @@ const breadcrumbItems = [
           </form>
         )
       }
+
+      {credentialResult?.error && <p class="login-error">{credentialResult.error.message}</p>}
+      <CredentialsPanel assetSlug={asset.slug} items={credentialItems} canEdit={!!Astro.locals.user} />
     </main>
 
     <aside class="bs-side details-side">

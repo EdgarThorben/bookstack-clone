@@ -8,7 +8,7 @@ const updatedByUser = alias(users, "updated_by_user");
 
 export async function getShelves() {
   const [shelfRows, bookRows] = await Promise.all([
-    db.select().from(shelves),
+    db.select().from(shelves).orderBy(shelves.sortOrder),
     db.select().from(books),
   ]);
   return shelfRows.map((s) => ({

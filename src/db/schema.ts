@@ -33,6 +33,7 @@ export const shelves = pgTable("shelves", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => [
   uniqueIndex("shelves_slug_idx").on(table.slug),
 ]);
@@ -182,3 +183,28 @@ export const assetRelationships = pgTable("asset_relationships", {
   ),
   check("asset_relationships_no_self_reference", sql`${table.assetId} <> ${table.relatedAssetId}`),
 ]);
+
+// --- CMDB: credentials (sensitive field type, per CLAUDE.md) ---
+// Secrets are never stored in `assets.fields`. Encrypted app-side (AES-256-GCM,
+// see src/lib/credentialCrypto.ts) — ciphertext/iv/authTag only, key lives in
+// an env var, never in this table. Masked-by-default in the UI; every decrypt
+// is written to `credentialReveals` for an audit trail instead of gating
+// access behind per-user RBAC (confirmed 2026-07-14, see CLAUDE.md).
+export const credentials = pgTable("credentials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  assetId: uuid("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  username: text("username").notNull(),
+  ciphertext: text("ciphertext").notNull(),
+  iv: text("iv").notNull(),
+  authTag: text("auth_tag").notNull(),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const credentialReveals = pgTable("credential_reveals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  credentialId: uuid("credential_id").notNull().references(() => credentials.id, { onDelete: "cascade" }),
+  revealedBy: uuid("revealed_by").references(() => users.id),
+  revealedAt: timestamp("revealed_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -15,6 +15,20 @@
       "when": 1783891143106,
       "tag": "0001_magenta_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783949812330,
+      "tag": "0002_add_shelf_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783950086076,
+      "tag": "0003_add_credentials",
+      "breakpoints": true
     }
   ]
 }
