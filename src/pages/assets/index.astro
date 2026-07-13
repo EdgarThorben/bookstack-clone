@@ -1,0 +1,57 @@
+---
+import BookStackLayout from "../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { listAssets } from "../../lib/assetQueries";
+import { formatAssetLabel } from "../../lib/assetLabels";
+
+const allAssets = await listAssets();
+
+const groups = new Map<string, typeof allAssets>();
+for (const asset of allAssets) {
+  if (!groups.has(asset.type)) groups.set(asset.type, []);
+  groups.get(asset.type)!.push(asset);
+}
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Assets", href: "", icon: "book", current: true },
+];
+---
+
+<BookStackLayout title="Assets">
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>Assets</h1>
+    <p style="color:var(--bs-muted); max-width:60ch; margin-bottom:2rem;">
+      Typed CMDB inventory — hardware, software, databases, and network devices, with their
+      dependency relationships.
+    </p>
+
+    {Astro.locals.user && <a class="new-page-link" href="/assets/new">+ New Asset</a>}
+
+    {allAssets.length === 0 && <p class="no-changes">No assets yet.</p>}
+
+    {
+      [...groups.entries()].map(([type, items]) => (
+        <>
+          <div class="shelf-block-header" style="margin-top:2rem;">
+            <h2>{formatAssetLabel(type)}</h2>
+            <p>{items.length} {items.length === 1 ? "asset" : "assets"}</p>
+          </div>
+          <div class="card-grid">
+            {items.map((asset) => (
+              <a class="book-card" href={`/assets/${asset.slug}`}>
+                <span class="card-title" style="padding-top:1rem;">
+                  {asset.name}
+                  {asset.status === "decommissioned" && (
+                    <span class="asset-status-badge">Decommissioned</span>
+                  )}
+                </span>
+              </a>
+            ))}
+          </div>
+        </>
+      ))
+    }
+  </div>
+</BookStackLayout>

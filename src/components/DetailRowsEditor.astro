@@ -7,9 +7,10 @@ interface DetailRow {
 
 interface Props {
   initialDetails?: DetailRow[];
+  fieldName?: string;
 }
 
-const { initialDetails = [] } = Astro.props;
+const { initialDetails = [], fieldName = "details" } = Astro.props;
 const seedRows = initialDetails.length > 0 ? initialDetails : [{ category: "", label: "", value: "" }];
 const initialJson = JSON.stringify(seedRows);
 ---
@@ -27,7 +28,7 @@ const initialJson = JSON.stringify(seedRows);
     <tbody id="detail-rows-body"></tbody>
   </table>
   <button type="button" id="add-detail-row" class="secondary-button">+ Add field</button>
-  <input type="hidden" name="details" id="details-json" />
+  <input type="hidden" name={fieldName} id="details-json" />
 </div>
 
 <script>

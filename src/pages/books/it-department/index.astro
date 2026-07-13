@@ -30,13 +30,11 @@ const breadcrumbItems = [
     <div class="card-grid">
       {
         chapterPages.map((s) => (
-          <div class="book-card">
+          <a class="book-card" href={`/books/it-department/page/${s.slug}`}>
             <img class="cover-image" src={s.imageUrl ?? undefined} alt={s.title} />
-            <a class="card-title" href={`/books/it-department/page/${s.slug}`}>
-              {s.title}
-            </a>
+            <span class="card-title">{s.title}</span>
             <p>{s.region}</p>
-          </div>
+          </a>
         ))
       }
     </div>
@@ -47,11 +45,9 @@ const breadcrumbItems = [
     <div class="card-grid">
       {
         otherPages.map((p) => (
-          <div class="book-card">
-            <a class="card-title" style="padding-top:1rem;" href={`/books/it-department/page/${p.slug}`}>
-              {p.title}
-            </a>
-          </div>
+          <a class="book-card" href={`/books/it-department/page/${p.slug}`}>
+            <span class="card-title" style="padding-top:1rem;">{p.title}</span>
+          </a>
         ))
       }
     </div>

@@ -1,5 +1,6 @@
 import { demoLogin, login, logout } from "./auth";
 import { createPage, updatePage } from "./pages";
+import { addAssetRelationship, createAsset, decommissionAsset, updateAsset } from "./assets";
 
 export const server = {
   login,
@@ -7,4 +8,8 @@ export const server = {
   demoLogin,
   createPage,
   updatePage,
+  createAsset,
+  updateAsset,
+  decommissionAsset,
+  addAssetRelationship,
 };

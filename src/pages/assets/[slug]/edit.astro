@@ -1,0 +1,64 @@
+---
+import BookStackLayout from "../../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import DetailRowsEditor from "../../../components/DetailRowsEditor.astro";
+import { actions } from "astro:actions";
+import { getAssetBySlug } from "../../../lib/assetQueries";
+
+if (!Astro.locals.user) {
+  return Astro.redirect("/login");
+}
+
+const { slug } = Astro.params;
+const asset = slug ? await getAssetBySlug(slug) : null;
+
+if (!asset) {
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
+}
+
+const result = Astro.getActionResult(actions.updateAsset);
+
+if (result && !result.error) {
+  return Astro.redirect(`/assets/${result.data.slug}`);
+}
+
+const backHref = `/assets/${asset.slug}`;
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Assets", href: "/assets", icon: "book" },
+  { label: asset.name, href: backHref, icon: "page" },
+  { label: "Edit", href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title={`Edit — ${asset.name}`}>
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>Edit Asset</h1>
+    {result?.error && <p class="login-error">{result.error.message}</p>}
+
+    <form class="page-form" method="POST" action={actions.updateAsset}>
+      <input type="hidden" name="slug" value={asset.slug} />
+
+      <label>
+        Name
+        <input type="text" name="name" required value={asset.name} />
+      </label>
+
+      <label>Fields</label>
+      <DetailRowsEditor initialDetails={asset.fields} fieldName="fields" />
+
+      <label>
+        Edit summary <span style="font-weight:400;color:var(--bs-muted);">(optional, shown in revision history)</span>
+        <input type="text" name="summary" placeholder="What did you change and why?" />
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="primary-button">Save Changes</button>
+        <a href={backHref} class="secondary-button">Cancel</a>
+      </div>
+    </form>
+  </div>
+</BookStackLayout>

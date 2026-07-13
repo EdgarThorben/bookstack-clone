@@ -1,0 +1,141 @@
+---
+import BookStackLayout from "../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import DetailsPanel from "../../components/DetailsPanel.astro";
+import { actions } from "astro:actions";
+import { getAssetBySlug, getAssetRelationships, listAssets } from "../../lib/assetQueries";
+import { groupDetailsByCategory } from "../../lib/details";
+import { formatAssetLabel } from "../../lib/assetLabels";
+import { formatRelativeTime } from "../../lib/time";
+import { relationshipTypes } from "../../db/schema";
+
+const { slug } = Astro.params;
+const asset = slug ? await getAssetBySlug(slug) : null;
+
+if (!asset) {
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
+}
+
+const relateResult = Astro.getActionResult(actions.addAssetRelationship);
+const decommissionResult = Astro.getActionResult(actions.decommissionAsset);
+if ((relateResult && !relateResult.error) || (decommissionResult && !decommissionResult.error)) {
+  return Astro.redirect(`/assets/${asset.slug}`);
+}
+
+const categories = groupDetailsByCategory(asset.fields);
+const { outgoing, incoming } = await getAssetRelationships(asset.id);
+const otherAssets = (await listAssets()).filter((a) => a.id !== asset.id);
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Assets", href: "/assets", icon: "book" },
+  { label: asset.name, href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title={asset.name}>
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="bs-layout">
+    <main class="bs-content">
+      <h1>
+        {asset.name}
+        {asset.status === "decommissioned" && <span class="asset-status-badge">Decommissioned</span>}
+      </h1>
+      <p style="color:var(--bs-muted);">{formatAssetLabel(asset.type)}</p>
+
+      <h2>Fields</h2>
+      {categories.length === 0 && <p class="no-changes">No fields recorded yet.</p>}
+      {
+        categories.map((group) => (
+          <details class="category-details" open>
+            <summary>
+              {group.category || "General"} <span class="cat-count">({group.items.length})</span>
+            </summary>
+            <div class="table-scroll">
+              <table class="detail-table">
+                <tbody>
+                  {group.items.map((d) => (
+                    <tr>
+                      <th>{d.label}</th>
+                      <td>{d.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        ))
+      }
+
+      <h2>Relationships</h2>
+      {(relateResult?.error) && <p class="login-error">{relateResult.error.message}</p>}
+
+      <h3>Depends on / points to</h3>
+      {outgoing.length === 0 && <p class="no-changes">No outgoing relationships.</p>}
+      <ul class="relationship-list">
+        {outgoing.map((r) => (
+          <li>
+            <span class="rel-type">{formatAssetLabel(r.relationshipType)}</span>
+            <a href={`/assets/${r.relatedAsset.slug}`}>{r.relatedAsset.name}</a>
+            <span style="color:var(--bs-muted); font-size:0.85rem;">({formatAssetLabel(r.relatedAsset.type)})</span>
+          </li>
+        ))}
+      </ul>
+
+      <h3>Referenced by</h3>
+      {incoming.length === 0 && <p class="no-changes">Nothing points to this asset.</p>}
+      <ul class="relationship-list">
+        {incoming.map((r) => (
+          <li>
+            <a href={`/assets/${r.sourceAsset.slug}`}>{r.sourceAsset.name}</a>
+            <span class="rel-type">{formatAssetLabel(r.relationshipType)}</span>
+            <span style="color:var(--bs-muted); font-size:0.85rem;">this asset</span>
+          </li>
+        ))}
+      </ul>
+
+      {
+        Astro.locals.user && otherAssets.length > 0 && (
+          <form class="relate-form" method="POST" action={actions.addAssetRelationship}>
+            <input type="hidden" name="assetSlug" value={asset.slug} />
+            <select name="relationshipType" required>
+              {relationshipTypes.map((t) => (
+                <option value={t}>{formatAssetLabel(t)}</option>
+              ))}
+            </select>
+            <select name="relatedAssetSlug" required>
+              {otherAssets.map((a) => (
+                <option value={a.slug}>{a.name} ({formatAssetLabel(a.type)})</option>
+              ))}
+            </select>
+            <button type="submit" class="secondary-button">+ Add Relationship</button>
+          </form>
+        )
+      }
+    </main>
+
+    <aside class="bs-side details-side">
+      <DetailsPanel
+        revision={asset.currentRevision}
+        createdBy={asset.createdByName}
+        createdAgo={formatRelativeTime(asset.createdAt)}
+        updatedBy={asset.updatedByName}
+        updatedAgo={formatRelativeTime(asset.updatedAt)}
+        revisionsHref={`/assets/${asset.slug}/revisions`}
+        editHref={Astro.locals.user ? `/assets/${asset.slug}/edit` : undefined}
+        exportData={asset.fields}
+        exportFilename={asset.slug}
+        exportTitle={asset.name}
+      />
+      {
+        Astro.locals.user && asset.status === "active" && (
+          <form method="POST" action={actions.decommissionAsset} style="margin-top:1rem;">
+            <input type="hidden" name="slug" value={asset.slug} />
+            <button type="submit" class="secondary-button">Decommission Asset</button>
+          </form>
+        )
+      }
+    </aside>
+  </div>
+</BookStackLayout>

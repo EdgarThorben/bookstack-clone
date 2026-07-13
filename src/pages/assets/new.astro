@@ -1,0 +1,56 @@
+---
+import BookStackLayout from "../../layouts/BookStackLayout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import DetailRowsEditor from "../../components/DetailRowsEditor.astro";
+import { actions } from "astro:actions";
+import { assetTypes } from "../../db/schema";
+import { formatAssetLabel } from "../../lib/assetLabels";
+
+if (!Astro.locals.user) {
+  return Astro.redirect("/login");
+}
+
+const result = Astro.getActionResult(actions.createAsset);
+
+if (result && !result.error) {
+  return Astro.redirect(`/assets/${result.data.slug}`);
+}
+
+const breadcrumbItems = [
+  { label: "Shelves", href: "/", icon: "shelf" },
+  { label: "Assets", href: "/assets", icon: "book" },
+  { label: "New Asset", href: "", icon: "page", current: true },
+];
+---
+
+<BookStackLayout title="New Asset">
+  <Breadcrumb items={breadcrumbItems} />
+  <div class="home-wrap">
+    <h1>New Asset</h1>
+    {result?.error && <p class="login-error">{result.error.message}</p>}
+
+    <form class="page-form" method="POST" action={actions.createAsset}>
+      <label>
+        Type
+        <select name="type" required>
+          {assetTypes.map((type) => (
+            <option value={type}>{formatAssetLabel(type)}</option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Name
+        <input type="text" name="name" required placeholder="e.g. prod-azure-thornwake" />
+      </label>
+
+      <label>Fields</label>
+      <DetailRowsEditor fieldName="fields" />
+
+      <div class="form-actions">
+        <button type="submit" class="primary-button">Create Asset</button>
+        <a href="/assets" class="secondary-button">Cancel</a>
+      </div>
+    </form>
+  </div>
+</BookStackLayout>

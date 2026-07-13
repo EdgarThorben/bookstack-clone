@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../db/client";
-import { books, chapters, pageRevisions, pages, shelves, users } from "../db/schema";
+import { assets, books, chapters, pageRevisions, pages, shelves, users } from "../db/schema";
 
 const createdByUser = alias(users, "created_by_user");
 const updatedByUser = alias(users, "updated_by_user");
@@ -105,6 +105,7 @@ export async function getSearchEntries(): Promise<SearchEntry[]> {
   const entries: SearchEntry[] = [
     { title: "Shelves — Home", url: "/", type: "Home", excerpt: "NimbusVault Knowledge Base overview" },
     { title: "All Books", url: "/books", type: "Books", excerpt: "Every book across every shelf" },
+    { title: "Assets", url: "/assets", type: "Assets", excerpt: "Typed CMDB inventory of hardware, software, and services" },
   ];
 
   const shelfList = await getShelves();
@@ -126,6 +127,19 @@ export async function getSearchEntries(): Promise<SearchEntry[]> {
       url: `/books/${p.bookSlug}/page/${p.slug}`,
       type: "Page",
       excerpt: p.region ? `${p.region} — ${p.bookTitle}` : p.bookTitle,
+    });
+  }
+
+  const allAssets = await db
+    .select({ slug: assets.slug, name: assets.name, type: assets.type, status: assets.status })
+    .from(assets);
+
+  for (const a of allAssets) {
+    entries.push({
+      title: a.name,
+      url: `/assets/${a.slug}`,
+      type: "Asset",
+      excerpt: a.status === "decommissioned" ? `${a.type} — decommissioned` : a.type,
     });
   }
 

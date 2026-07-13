@@ -8,6 +8,13 @@
       "when": 1783711018066,
       "tag": "0000_crazy_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783891143106,
+      "tag": "0001_magenta_silhouette",
+      "breakpoints": true
     }
   ]
 }

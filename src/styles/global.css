@@ -781,6 +781,8 @@ hr.thin {
   background: #fff;
   display: flex;
   flex-direction: column;
+  color: inherit;
+  text-decoration: none;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
@@ -789,16 +791,15 @@ hr.thin {
   transform: translateY(-2px);
 }
 
-.book-card a.card-title {
+.book-card .card-title {
   padding: 0.9rem 1rem 0.3rem;
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--bs-text);
 }
 
-.book-card a.card-title:hover {
+.book-card:hover .card-title {
   color: var(--bs-blue);
-  text-decoration: none;
 }
 
 .book-card p {
@@ -816,6 +817,56 @@ hr.thin {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+.asset-status-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fbe9e7;
+  color: #b3452c;
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.relationship-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.relationship-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--bs-border);
+}
+
+.relationship-list .rel-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--bs-muted);
+  min-width: 7rem;
+}
+
+.relate-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.relate-form select,
+.relate-form input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--bs-border);
+  border-radius: 6px;
 }
 
 .stat-strip {
