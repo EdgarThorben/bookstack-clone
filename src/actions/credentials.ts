@@ -3,7 +3,7 @@ import { z } from "astro:schema";
 import { db } from "../db/client";
 import { credentialReveals, credentials } from "../db/schema";
 import type { SessionUser } from "../lib/auth";
-import { getAssetBySlug } from "../lib/assetQueries";
+import { getItemBySlug } from "../lib/itemQueries";
 import { getCredentialById } from "../lib/credentialQueries";
 import { decryptSecret, encryptSecret } from "../lib/credentialCrypto";
 
@@ -17,21 +17,21 @@ function requireUser(locals: App.Locals): SessionUser {
 export const createCredential = defineAction({
   accept: "form",
   input: z.object({
-    assetSlug: z.string().min(1),
+    itemSlug: z.string().min(1),
     label: z.string().min(1),
     username: z.string().min(1),
     secret: z.string().min(1),
   }),
-  handler: async ({ assetSlug, label, username, secret }, context) => {
+  handler: async ({ itemSlug, label, username, secret }, context) => {
     const user = requireUser(context.locals);
-    const asset = await getAssetBySlug(assetSlug);
-    if (!asset) {
-      throw new ActionError({ code: "NOT_FOUND", message: "Asset not found." });
+    const item = await getItemBySlug(itemSlug);
+    if (!item) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Item not found." });
     }
 
     const encrypted = encryptSecret(secret);
     await db.insert(credentials).values({
-      assetId: asset.id,
+      itemId: item.id,
       label,
       username,
       ciphertext: encrypted.ciphertext,
@@ -40,7 +40,7 @@ export const createCredential = defineAction({
       createdBy: user.id,
     });
 
-    return { assetSlug };
+    return { itemSlug };
   },
 });
 

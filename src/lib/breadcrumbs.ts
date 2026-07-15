@@ -5,23 +5,20 @@ export interface Crumb {
   current?: boolean;
 }
 
-export function breadcrumbForPage(opts: {
-  shelvesLabel?: string;
-  shelfTitle: string;
-  shelfSlug: string;
-  bookTitle: string;
-  bookSlug: string;
-  chapterTitle?: string | null;
-  pageTitle: string;
+export function breadcrumbForItem(opts: {
+  homeLabel?: string;
+  collectionTitle: string;
+  collectionSlug: string;
+  section?: string | null;
+  itemName: string;
 }): Crumb[] {
   const items: Crumb[] = [
-    { label: opts.shelvesLabel ?? "Shelves", href: "/", icon: "shelf" },
-    { label: opts.shelfTitle, href: `/shelves/${opts.shelfSlug}`, icon: "shelf" },
-    { label: opts.bookTitle, href: `/books/${opts.bookSlug}`, icon: "book" },
+    { label: opts.homeLabel ?? "Home", href: "/", icon: "shelf" },
+    { label: opts.collectionTitle, href: `/collections/${opts.collectionSlug}`, icon: "book" },
   ];
-  if (opts.chapterTitle) {
-    items.push({ label: opts.chapterTitle, href: `/books/${opts.bookSlug}`, icon: "chapter" });
+  if (opts.section) {
+    items.push({ label: opts.section, href: `/collections/${opts.collectionSlug}`, icon: "chapter" });
   }
-  items.push({ label: opts.pageTitle, href: "", icon: "page", current: true });
+  items.push({ label: opts.itemName, href: "", icon: "page", current: true });
   return items;
 }

@@ -5,29 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1783711018066,
-      "tag": "0000_crazy_deathstrike",
+      "when": 1783976762214,
+      "tag": "0000_jittery_valkyrie",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1783891143106,
-      "tag": "0001_magenta_silhouette",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1783949812330,
-      "tag": "0002_add_shelf_sort_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1783950086076,
-      "tag": "0003_add_credentials",
+      "when": 1783977082690,
+      "tag": "0001_ancient_the_captain",
       "breakpoints": true
     }
   ]

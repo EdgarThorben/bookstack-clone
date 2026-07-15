@@ -1,18 +1,17 @@
 import { demoLogin, login, logout } from "./auth";
-import { createPage, updatePage } from "./pages";
-import { addAssetRelationship, createAsset, decommissionAsset, updateAsset } from "./assets";
+import { addItemRelationship, archiveItem, createItem, updateItem } from "./items";
+import { createCollection } from "./collections";
 import { createCredential, revealCredential } from "./credentials";
 
 export const server = {
   login,
   logout,
   demoLogin,
-  createPage,
-  updatePage,
-  createAsset,
-  updateAsset,
-  decommissionAsset,
-  addAssetRelationship,
+  createItem,
+  updateItem,
+  archiveItem,
+  addItemRelationship,
+  createCollection,
   createCredential,
   revealCredential,
 };

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { credentialReveals, credentials, users } from "../db/schema";
 
-export async function getCredentialsForAsset(assetId: string) {
+export async function getCredentialsForItem(itemId: string) {
   const rows = await db
     .select({
       id: credentials.id,
@@ -13,7 +13,7 @@ export async function getCredentialsForAsset(assetId: string) {
     })
     .from(credentials)
     .leftJoin(users, eq(credentials.createdBy, users.id))
-    .where(eq(credentials.assetId, assetId))
+    .where(eq(credentials.itemId, itemId))
     .orderBy(credentials.label);
 
   const withRevealCounts = await Promise.all(

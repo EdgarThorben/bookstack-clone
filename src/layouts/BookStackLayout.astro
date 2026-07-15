@@ -27,11 +27,13 @@ const langToggleHref = currentUrl.pathname + currentUrl.search;
   <body>
     <header class="bs-header">
       <a href="/" class="brand">
-        <svg class="bs-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="4" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.95"/>
-          <rect x="2" y="10" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.75"/>
-          <rect x="2" y="16" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.55"/>
-        </svg>
+        <span class="brand-mark">
+          <svg class="bs-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="4" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.95"/>
+            <rect x="2" y="10" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.75"/>
+            <rect x="2" y="16" width="20" height="4" rx="1" fill="#fff" fill-opacity="0.55"/>
+          </svg>
+        </span>
         {site.name}
       </a>
       <div class="search" id="site-search">
@@ -44,9 +46,8 @@ const langToggleHref = currentUrl.pathname + currentUrl.search;
         ></div>
       </div>
       <nav>
-        <a href="/">{t(lang, "nav.shelves")}</a>
-        <a href="/books">{t(lang, "nav.books")}</a>
-        <a href="/assets">{t(lang, "nav.assets")}</a>
+        <a href="/">{t(lang, "nav.home")}</a>
+        <a href="/items">{t(lang, "nav.items")}</a>
         <a href={langToggleHref} class="lang-toggle" title="English / Deutsch">
           {lang === "en" ? "DE" : "EN"}
         </a>

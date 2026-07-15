@@ -27,35 +27,29 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const shelves = pgTable("shelves", {
+// --- Collections + Items: the unified content model ---
+// A Collection is a simple top-level grouping (was "shelves"). An Item is
+// everything that used to be split across books/chapters/pages (free-text
+// wiki docs) and the separate assets table (typed CMDB records) — one
+// entity, optionally typed, with structured fields, revisions, and an
+// explicit relationship graph regardless of what kind of thing it documents.
+// See CLAUDE.md for the consolidation rationale.
+
+export const collections = pgTable("collections", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: text("slug").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url").notNull(),
+  // Free-text grouping label shown as a home-page section header (e.g.
+  // "Clients", "Internal Departments") — replaces the old `shelves` table,
+  // which was a near-1:1 wrapper around a single book and added a layer of
+  // nesting without adding meaning.
+  category: text("category"),
   sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => [
-  uniqueIndex("shelves_slug_idx").on(table.slug),
+  uniqueIndex("collections_slug_idx").on(table.slug),
 ]);
-
-export const books = pgTable("books", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  shelfId: uuid("shelf_id").notNull().references(() => shelves.id, { onDelete: "cascade" }),
-  slug: text("slug").notNull(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
-  pageCount: integer("page_count").notNull().default(0),
-}, (table) => [
-  uniqueIndex("books_slug_idx").on(table.slug),
-]);
-
-export const chapters = pgTable("chapters", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  bookId: uuid("book_id").notNull().references(() => books.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
-});
 
 export interface PageDetail {
   category: string;
@@ -69,42 +63,8 @@ export interface RevisionChange {
   to: string;
 }
 
-export const pages = pgTable("pages", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  bookId: uuid("book_id").notNull().references(() => books.id, { onDelete: "cascade" }),
-  chapterId: uuid("chapter_id").references(() => chapters.id, { onDelete: "set null" }),
-  slug: text("slug").notNull(),
-  title: text("title").notNull(),
-  region: text("region"),
-  imageUrl: text("image_url"),
-  warning: text("warning"),
-  details: jsonb("details").$type<PageDetail[]>().notNull().default([]),
-  createdBy: uuid("created_by").references(() => users.id),
-  updatedBy: uuid("updated_by").references(() => users.id),
-  currentRevision: integer("current_revision").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  uniqueIndex("pages_slug_idx").on(table.slug),
-]);
-
-export const pageRevisions = pgTable("page_revisions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  pageId: uuid("page_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
-  revisionNo: integer("revision_no").notNull(),
-  authorId: uuid("author_id").references(() => users.id),
-  summary: text("summary").notNull(),
-  detailsSnapshot: jsonb("details_snapshot").$type<PageDetail[]>().notNull().default([]),
-  changes: jsonb("changes").$type<RevisionChange[]>().notNull().default([]),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// --- CMDB: typed assets + relationship graph ---
-// Distinct from `pages` (free-text wiki docs). An asset is a typed Configuration
-// Item (server, switch, license, workstation, ...) with structured fields and
-// its own revision history, per CLAUDE.md's data-model rules.
-
-export const assetTypes = [
+export const itemTypes = [
+  "document",
   "server",
   "storage-disk",
   "database",
@@ -115,13 +75,13 @@ export const assetTypes = [
   "service",
   "other",
 ] as const;
-export type AssetType = (typeof assetTypes)[number];
+export type ItemType = (typeof itemTypes)[number];
 
-export const assetStatuses = ["active", "decommissioned"] as const;
-export type AssetStatus = (typeof assetStatuses)[number];
+export const itemStatuses = ["active", "archived"] as const;
+export type ItemStatus = (typeof itemStatuses)[number];
 
-// Relationship is directed: assetId --[relationshipType]--> relatedAssetId
-// e.g. (web-01, "depends_on", switch-core-1)
+// Relationship is directed: itemId --[relationshipType]--> relatedItemId
+// e.g. (web-01, "depends_on", switch-core-1), or (runbook, "references", web-01)
 export const relationshipTypes = [
   "depends_on",
   "hosts",
@@ -130,17 +90,25 @@ export const relationshipTypes = [
   "licensed_for",
   "attached_to",
   "installed_on",
+  "references",
 ] as const;
 export type RelationshipType = (typeof relationshipTypes)[number];
 
-export const assets = pgTable("assets", {
+export const items = pgTable("items", {
   id: uuid("id").defaultRandom().primaryKey(),
-  type: text("type").notNull().$type<AssetType>(),
+  collectionId: uuid("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  type: text("type").notNull().$type<ItemType>(),
+  // Free-text grouping within a collection (e.g. "Server Systems"), replaces
+  // the old `chapters` join table — just a label on the item, no join needed.
+  section: text("section"),
   slug: text("slug").notNull(),
   name: text("name").notNull(),
-  // Soft-delete per CLAUDE.md: decommissioned assets stay auditable, never hard-deleted.
-  status: text("status").notNull().default("active").$type<AssetStatus>(),
-  decommissionedAt: timestamp("decommissioned_at", { withTimezone: true }),
+  region: text("region"),
+  imageUrl: text("image_url"),
+  warning: text("warning"),
+  // Soft-delete: archived items stay auditable, never hard-deleted.
+  status: text("status").notNull().default("active").$type<ItemStatus>(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   fields: jsonb("fields").$type<PageDetail[]>().notNull().default([]),
   createdBy: uuid("created_by").references(() => users.id),
   updatedBy: uuid("updated_by").references(() => users.id),
@@ -148,13 +116,12 @@ export const assets = pgTable("assets", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  uniqueIndex("assets_slug_idx").on(table.slug),
+  uniqueIndex("items_slug_idx").on(table.slug),
 ]);
 
-// Same revision pattern as pageRevisions — reused per CLAUDE.md, not a second mechanism.
-export const assetRevisions = pgTable("asset_revisions", {
+export const itemRevisions = pgTable("item_revisions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  assetId: uuid("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
   revisionNo: integer("revision_no").notNull(),
   authorId: uuid("author_id").references(() => users.id),
   summary: text("summary").notNull(),
@@ -163,36 +130,36 @@ export const assetRevisions = pgTable("asset_revisions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// The CI relationship graph — an explicit join table, not prose links inside `fields`.
-// DB-level guards: no self-references, no duplicate edges. Cycle detection across
-// longer chains (A depends_on B depends_on C depends_on A) is enforced in
-// src/lib/assetGraph.ts at write time, since Postgres check constraints can't
-// express "no path back to the origin" across arbitrary depth.
-export const assetRelationships = pgTable("asset_relationships", {
+// The relationship graph — an explicit join table, not prose links inside
+// `fields`. DB-level guards: no self-references, no duplicate edges. Cycle
+// detection across longer chains (A depends_on B depends_on C depends_on A)
+// is enforced in src/lib/itemGraph.ts at write time, since Postgres check
+// constraints can't express "no path back to the origin" across arbitrary depth.
+export const itemRelationships = pgTable("item_relationships", {
   id: uuid("id").defaultRandom().primaryKey(),
-  assetId: uuid("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
-  relatedAssetId: uuid("related_asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
+  relatedItemId: uuid("related_item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
   relationshipType: text("relationship_type").notNull().$type<RelationshipType>(),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  uniqueIndex("asset_relationships_unique_idx").on(
-    table.assetId,
-    table.relatedAssetId,
+  uniqueIndex("item_relationships_unique_idx").on(
+    table.itemId,
+    table.relatedItemId,
     table.relationshipType,
   ),
-  check("asset_relationships_no_self_reference", sql`${table.assetId} <> ${table.relatedAssetId}`),
+  check("item_relationships_no_self_reference", sql`${table.itemId} <> ${table.relatedItemId}`),
 ]);
 
-// --- CMDB: credentials (sensitive field type, per CLAUDE.md) ---
-// Secrets are never stored in `assets.fields`. Encrypted app-side (AES-256-GCM,
+// --- Credentials (sensitive field type, per CLAUDE.md) ---
+// Secrets are never stored in `items.fields`. Encrypted app-side (AES-256-GCM,
 // see src/lib/credentialCrypto.ts) — ciphertext/iv/authTag only, key lives in
 // an env var, never in this table. Masked-by-default in the UI; every decrypt
 // is written to `credentialReveals` for an audit trail instead of gating
 // access behind per-user RBAC (confirmed 2026-07-14, see CLAUDE.md).
 export const credentials = pgTable("credentials", {
   id: uuid("id").defaultRandom().primaryKey(),
-  assetId: uuid("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
+  itemId: uuid("item_id").notNull().references(() => items.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   username: text("username").notNull(),
   ciphertext: text("ciphertext").notNull(),

@@ -1,11 +1,11 @@
 {
-  "id": "22241690-99ce-41e7-bfa4-3a7cc282bc2a",
+  "id": "3045369a-38f3-4411-bb8c-7db36143178e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.books": {
-      "name": "books",
+    "public.collections": {
+      "name": "collections",
       "schema": "",
       "columns": {
         "id": {
@@ -14,12 +14,6 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
-        },
-        "shelf_id": {
-          "name": "shelf_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
         },
         "slug": {
           "name": "slug",
@@ -45,8 +39,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "page_count": {
-          "name": "page_count",
+        "sort_order": {
+          "name": "sort_order",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -54,8 +48,8 @@
         }
       },
       "indexes": {
-        "books_slug_idx": {
-          "name": "books_slug_idx",
+        "collections_slug_idx": {
+          "name": "collections_slug_idx",
           "columns": [
             {
               "expression": "slug",
@@ -70,29 +64,15 @@
           "with": {}
         }
       },
-      "foreignKeys": {
-        "books_shelf_id_shelves_id_fk": {
-          "name": "books_shelf_id_shelves_id_fk",
-          "tableFrom": "books",
-          "tableTo": "shelves",
-          "columnsFrom": [
-            "shelf_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.chapters": {
-      "name": "chapters",
+    "public.credential_reveals": {
+      "name": "credential_reveals",
       "schema": "",
       "columns": {
         "id": {
@@ -102,39 +82,52 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "book_id": {
-          "name": "book_id",
+        "credential_id": {
+          "name": "credential_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
-          "type": "text",
+        "revealed_by": {
+          "name": "revealed_by",
+          "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "sort_order": {
-          "name": "sort_order",
-          "type": "integer",
+        "revealed_at": {
+          "name": "revealed_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "chapters_book_id_books_id_fk": {
-          "name": "chapters_book_id_books_id_fk",
-          "tableFrom": "chapters",
-          "tableTo": "books",
+        "credential_reveals_credential_id_credentials_id_fk": {
+          "name": "credential_reveals_credential_id_credentials_id_fk",
+          "tableFrom": "credential_reveals",
+          "tableTo": "credentials",
           "columnsFrom": [
-            "book_id"
+            "credential_id"
           ],
           "columnsTo": [
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "credential_reveals_revealed_by_users_id_fk": {
+          "name": "credential_reveals_revealed_by_users_id_fk",
+          "tableFrom": "credential_reveals",
+          "tableTo": "users",
+          "columnsFrom": [
+            "revealed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -144,8 +137,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.page_revisions": {
-      "name": "page_revisions",
+    "public.credentials": {
+      "name": "credentials",
       "schema": "",
       "columns": {
         "id": {
@@ -155,8 +148,228 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "page_id": {
-          "name": "page_id",
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ciphertext": {
+          "name": "ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iv": {
+          "name": "iv",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auth_tag": {
+          "name": "auth_tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "credentials_item_id_items_id_fk": {
+          "name": "credentials_item_id_items_id_fk",
+          "tableFrom": "credentials",
+          "tableTo": "items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "credentials_created_by_users_id_fk": {
+          "name": "credentials_created_by_users_id_fk",
+          "tableFrom": "credentials",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.item_relationships": {
+      "name": "item_relationships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "related_item_id": {
+          "name": "related_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relationship_type": {
+          "name": "relationship_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "item_relationships_unique_idx": {
+          "name": "item_relationships_unique_idx",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "related_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "relationship_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "item_relationships_item_id_items_id_fk": {
+          "name": "item_relationships_item_id_items_id_fk",
+          "tableFrom": "item_relationships",
+          "tableTo": "items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "item_relationships_related_item_id_items_id_fk": {
+          "name": "item_relationships_related_item_id_items_id_fk",
+          "tableFrom": "item_relationships",
+          "tableTo": "items",
+          "columnsFrom": [
+            "related_item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "item_relationships_created_by_users_id_fk": {
+          "name": "item_relationships_created_by_users_id_fk",
+          "tableFrom": "item_relationships",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "item_relationships_no_self_reference": {
+          "name": "item_relationships_no_self_reference",
+          "value": "\"item_relationships\".\"item_id\" <> \"item_relationships\".\"related_item_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.item_revisions": {
+      "name": "item_revisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "item_id": {
+          "name": "item_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -179,8 +392,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "details_snapshot": {
-          "name": "details_snapshot",
+        "fields_snapshot": {
+          "name": "fields_snapshot",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
@@ -203,12 +416,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "page_revisions_page_id_pages_id_fk": {
-          "name": "page_revisions_page_id_pages_id_fk",
-          "tableFrom": "page_revisions",
-          "tableTo": "pages",
+        "item_revisions_item_id_items_id_fk": {
+          "name": "item_revisions_item_id_items_id_fk",
+          "tableFrom": "item_revisions",
+          "tableTo": "items",
           "columnsFrom": [
-            "page_id"
+            "item_id"
           ],
           "columnsTo": [
             "id"
@@ -216,9 +429,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "page_revisions_author_id_users_id_fk": {
-          "name": "page_revisions_author_id_users_id_fk",
-          "tableFrom": "page_revisions",
+        "item_revisions_author_id_users_id_fk": {
+          "name": "item_revisions_author_id_users_id_fk",
+          "tableFrom": "item_revisions",
           "tableTo": "users",
           "columnsFrom": [
             "author_id"
@@ -236,8 +449,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.pages": {
-      "name": "pages",
+    "public.items": {
+      "name": "items",
       "schema": "",
       "columns": {
         "id": {
@@ -247,15 +460,21 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "book_id": {
-          "name": "book_id",
+        "collection_id": {
+          "name": "collection_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "chapter_id": {
-          "name": "chapter_id",
-          "type": "uuid",
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "section": {
+          "name": "section",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -265,8 +484,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -289,8 +508,21 @@
           "primaryKey": false,
           "notNull": false
         },
-        "details": {
-          "name": "details",
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fields": {
+          "name": "fields",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
@@ -331,8 +563,8 @@
         }
       },
       "indexes": {
-        "pages_slug_idx": {
-          "name": "pages_slug_idx",
+        "items_slug_idx": {
+          "name": "items_slug_idx",
           "columns": [
             {
               "expression": "slug",
@@ -348,12 +580,12 @@
         }
       },
       "foreignKeys": {
-        "pages_book_id_books_id_fk": {
-          "name": "pages_book_id_books_id_fk",
-          "tableFrom": "pages",
-          "tableTo": "books",
+        "items_collection_id_collections_id_fk": {
+          "name": "items_collection_id_collections_id_fk",
+          "tableFrom": "items",
+          "tableTo": "collections",
           "columnsFrom": [
-            "book_id"
+            "collection_id"
           ],
           "columnsTo": [
             "id"
@@ -361,22 +593,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "pages_chapter_id_chapters_id_fk": {
-          "name": "pages_chapter_id_chapters_id_fk",
-          "tableFrom": "pages",
-          "tableTo": "chapters",
-          "columnsFrom": [
-            "chapter_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "pages_created_by_users_id_fk": {
-          "name": "pages_created_by_users_id_fk",
-          "tableFrom": "pages",
+        "items_created_by_users_id_fk": {
+          "name": "items_created_by_users_id_fk",
+          "tableFrom": "items",
           "tableTo": "users",
           "columnsFrom": [
             "created_by"
@@ -387,9 +606,9 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "pages_updated_by_users_id_fk": {
-          "name": "pages_updated_by_users_id_fk",
-          "tableFrom": "pages",
+        "items_updated_by_users_id_fk": {
+          "name": "items_updated_by_users_id_fk",
+          "tableFrom": "items",
           "tableTo": "users",
           "columnsFrom": [
             "updated_by"
@@ -454,66 +673,6 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.shelves": {
-      "name": "shelves",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "shelves_slug_idx": {
-          "name": "shelves_slug_idx",
-          "columns": [
-            {
-              "expression": "slug",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

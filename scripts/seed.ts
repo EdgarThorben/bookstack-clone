@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db } from "../src/db/client";
-import { books, chapters, pageRevisions, pages, shelves, users } from "../src/db/schema";
-import type { PageDetail } from "../src/db/schema";
+import { collections, itemRevisions, items, users } from "../src/db/schema";
+import type { ItemType, PageDetail } from "../src/db/schema";
 import { hashPassword } from "../src/lib/auth";
 import { serverImage } from "../src/lib/images";
 
@@ -38,14 +38,15 @@ interface RevisionSpec {
   changes: ChangeSpec[];
 }
 
-interface PageSpec {
+interface ItemSpec {
   slug: string;
   title: string;
+  type: ItemType;
   region: string | null;
   baseDetails: PageDetail[];
   image: string | null;
   warning?: string;
-  chapter: boolean;
+  inSection: boolean;
   revisions: RevisionSpec[];
 }
 
@@ -62,13 +63,14 @@ function applyChanges(details: PageDetail[], changes: ChangeSpec[]): PageDetail[
   return list;
 }
 
-const servers: PageSpec[] = [
+const servers: ItemSpec[] = [
   {
     slug: "prod-aws-stonehawk",
     title: "prod-aws-stonehawk",
+    type: "server",
     region: "AWS us-east-1",
     image: img("stonehawk-datacenter"),
-    chapter: true,
+    inSection: true,
     warning:
       "DO NOT RESTART THIS MACHINE!!! Barry didn't assign a proper IP so AWS will re-allocate upon restart. This is production critical!",
     baseDetails: [
@@ -78,10 +80,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "T2-Micro" },
       { category: "Compute", label: "RAM", value: "0.5GB + 4GB Swap" },
       { category: "Compute", label: "CPU", value: "1vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "10GB" },
+      { category: "Compute", label: "Operating System", value: "Amazon Linux 2023" },
+      { category: "Compute", label: "Traffic", value: "Pay-per-GB (AWS Data Transfer Out pricing)" },
+      { category: "Storage & Backup", label: "Storage", value: "10GB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Customer object storage — hot tier" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "~4.2TB (encrypted at rest)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Every 6 hours, 30-day retention" },
+      { category: "Storage & Backup", label: "Backup", value: "Every 6 hours, 30-day retention" },
       { category: "Operations", label: "Uptime (90d)", value: "99.95%" },
     ],
     revisions: [
@@ -105,9 +109,10 @@ const servers: PageSpec[] = [
   {
     slug: "prod-linode-sparkjet",
     title: "prod-linode-sparkjet",
+    type: "server",
     region: "Linode eu-west",
     image: img("sparkjet-servers"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Linode" },
       { category: "Compute", label: "Region", value: "eu-west (London)" },
@@ -115,10 +120,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "Linode 4GB" },
       { category: "Compute", label: "RAM", value: "4GB" },
       { category: "Compute", label: "CPU", value: "2vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "80GB" },
+      { category: "Compute", label: "Operating System", value: "Ubuntu 22.04 LTS" },
+      { category: "Compute", label: "Traffic", value: "5TB/mo included (Linode plan allowance)" },
+      { category: "Storage & Backup", label: "Storage", value: "80GB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Customer object storage — warm tier" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "~11.8TB (encrypted at rest)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 30-day retention" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly, 30-day retention" },
       { category: "Operations", label: "Uptime (90d)", value: "99.98%" },
     ],
     revisions: [
@@ -138,16 +145,17 @@ const servers: PageSpec[] = [
         ago: "3 months ago",
         author: "priya",
         summary: "Extended backup retention window for compliance.",
-        changes: [{ field: "Backup Frequency", from: "Nightly, 30-day retention", to: "Nightly, 60-day retention" }],
+        changes: [{ field: "Backup", from: "Nightly, 30-day retention", to: "Nightly, 60-day retention" }],
       },
     ],
   },
   {
     slug: "dev-internal-sparklebike",
     title: "dev-internal-sparklebike",
+    type: "server",
     region: "Internal / On-Prem",
     image: img("sparklebike-rack"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Internal / On-Prem" },
       { category: "Compute", label: "Region", value: "Austin, TX (HQ)" },
@@ -155,10 +163,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "Custom Tower" },
       { category: "Compute", label: "RAM", value: "16GB" },
       { category: "Compute", label: "CPU", value: "4vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "500GB" },
+      { category: "Compute", label: "Operating System", value: "Ubuntu 22.04 LTS" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (internal network)" },
+      { category: "Storage & Backup", label: "Storage", value: "500GB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Internal staging & QA sandbox" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "None — synthetic test data only" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Weekly, 14-day retention" },
+      { category: "Storage & Backup", label: "Backup", value: "Weekly, 14-day retention" },
       { category: "Operations", label: "Uptime (90d)", value: "97.10%" },
     ],
     revisions: [
@@ -175,7 +185,7 @@ const servers: PageSpec[] = [
         ago: "14 months ago",
         author: "marcus",
         summary: "Migrated to a larger local volume.",
-        changes: [{ field: "Attached Disk Size", from: "250GB", to: "500GB" }],
+        changes: [{ field: "Storage", from: "250GB", to: "500GB" }],
       },
       {
         revision: 4,
@@ -189,16 +199,17 @@ const servers: PageSpec[] = [
         ago: "5 months ago",
         author: "marcus",
         summary: "Relaxed backup schedule — this box holds no real customer data.",
-        changes: [{ field: "Backup Frequency", from: "Daily, 7-day retention", to: "Weekly, 14-day retention" }],
+        changes: [{ field: "Backup", from: "Daily, 7-day retention", to: "Weekly, 14-day retention" }],
       },
     ],
   },
   {
     slug: "prod-gcp-glacierfox",
     title: "prod-gcp-glacierfox",
+    type: "server",
     region: "GCP europe-west1",
     image: img("glacierfox-datacenter"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Google Cloud Platform" },
       { category: "Compute", label: "Region", value: "europe-west1 (Belgium)" },
@@ -206,10 +217,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "n2-standard-8" },
       { category: "Compute", label: "RAM", value: "32GB" },
       { category: "Compute", label: "CPU", value: "8vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "2TB SSD" },
+      { category: "Compute", label: "Operating System", value: "Debian 12 (GCP default image)" },
+      { category: "Compute", label: "Traffic", value: "Pay-per-GB (GCP egress pricing)" },
+      { category: "Storage & Backup", label: "Storage", value: "2TB SSD" },
       { category: "Storage & Backup", label: "Storage Role", value: "Cold storage archive tier" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "~64.3TB (encrypted at rest)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Continuous replication, geo-redundant" },
+      { category: "Storage & Backup", label: "Backup", value: "Continuous replication, geo-redundant" },
       { category: "Operations", label: "Uptime (90d)", value: "99.99%" },
     ],
     revisions: [
@@ -229,7 +242,7 @@ const servers: PageSpec[] = [
         ago: "5 months ago",
         author: "priya",
         summary: "Expanded attached SSD ahead of a large cold-tier migration.",
-        changes: [{ field: "Attached Disk Size", from: "1TB SSD", to: "2TB SSD" }],
+        changes: [{ field: "Storage", from: "1TB SSD", to: "2TB SSD" }],
       },
       {
         revision: 4,
@@ -237,7 +250,7 @@ const servers: PageSpec[] = [
         author: "priya",
         summary: "Switched to continuous geo-redundant replication.",
         changes: [
-          { field: "Backup Frequency", from: "Nightly, 90-day retention", to: "Continuous replication, geo-redundant" },
+          { field: "Backup", from: "Nightly, 90-day retention", to: "Continuous replication, geo-redundant" },
         ],
       },
       {
@@ -259,9 +272,10 @@ const servers: PageSpec[] = [
   {
     slug: "prod-azure-thornwake",
     title: "prod-azure-thornwake",
+    type: "server",
     region: "Azure westeurope",
     image: img("thornwake-server-room"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Microsoft Azure" },
       { category: "Compute", label: "Region", value: "westeurope (Netherlands)" },
@@ -269,10 +283,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "Standard_D4s_v5" },
       { category: "Compute", label: "RAM", value: "16GB" },
       { category: "Compute", label: "CPU", value: "4vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "1TB Premium SSD" },
+      { category: "Compute", label: "Operating System", value: "Ubuntu 22.04 LTS" },
+      { category: "Compute", label: "Traffic", value: "Pay-per-GB (Azure outbound data transfer pricing)" },
+      { category: "Storage & Backup", label: "Storage", value: "1TB Premium SSD" },
       { category: "Storage & Backup", label: "Storage Role", value: "Customer object storage — hot tier" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "~22.6TB (encrypted at rest)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Every 6 hours, 30-day retention" },
+      { category: "Storage & Backup", label: "Backup", value: "Every 6 hours, 30-day retention" },
       { category: "Operations", label: "Uptime (90d)", value: "99.92%" },
     ],
     revisions: [
@@ -301,16 +317,17 @@ const servers: PageSpec[] = [
         ago: "2 weeks ago",
         author: "marcus",
         summary: "Tightened backup window to match hot-tier SLA.",
-        changes: [{ field: "Backup Frequency", from: "Daily, 14-day retention", to: "Every 6 hours, 30-day retention" }],
+        changes: [{ field: "Backup", from: "Daily, 14-day retention", to: "Every 6 hours, 30-day retention" }],
       },
     ],
   },
   {
     slug: "dr-onprem-ironvault",
     title: "dr-onprem-ironvault",
+    type: "server",
     region: "Internal / DR Site",
     image: img("ironvault-dr-site"),
-    chapter: true,
+    inSection: true,
     warning:
       "Failover target for all production storage nodes. Coordinate with the Infrastructure on-call lead before running any DR drills against this host.",
     baseDetails: [
@@ -320,10 +337,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "Dell PowerEdge R760" },
       { category: "Compute", label: "RAM", value: "256GB" },
       { category: "Compute", label: "CPU", value: "32vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "40TB RAID 6" },
+      { category: "Compute", label: "Operating System", value: "Ubuntu 22.04 LTS" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (internal DR link)" },
+      { category: "Storage & Backup", label: "Storage", value: "40TB RAID 6" },
       { category: "Storage & Backup", label: "Storage Role", value: "Disaster recovery cold replica" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "Full mirror — all tiers" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Daily sync from all production nodes" },
+      { category: "Storage & Backup", label: "Backup", value: "Daily sync from all production nodes" },
       { category: "Operations", label: "Uptime (90d)", value: "99.80%" },
     ],
     revisions: [
@@ -333,7 +352,7 @@ const servers: PageSpec[] = [
         ago: "10 months ago",
         author: "barry",
         summary: "Expanded the RAID array ahead of the Azure Thornwake onboarding.",
-        changes: [{ field: "Attached Disk Size", from: "20TB RAID 6", to: "40TB RAID 6" }],
+        changes: [{ field: "Storage", from: "20TB RAID 6", to: "40TB RAID 6" }],
       },
       {
         revision: 3,
@@ -361,16 +380,17 @@ const servers: PageSpec[] = [
         ago: "3 weeks ago",
         author: "priya",
         summary: "Tightened DR sync cadence from twice-daily to a continuous daily sync.",
-        changes: [{ field: "Backup Frequency", from: "Twice-daily sync", to: "Daily sync from all production nodes" }],
+        changes: [{ field: "Backup", from: "Twice-daily sync", to: "Daily sync from all production nodes" }],
       },
     ],
   },
   {
     slug: "prod-oracle-mistvane",
     title: "prod-oracle-mistvane",
+    type: "server",
     region: "Oracle Cloud us-phoenix-1",
     image: img("mistvane-datacenter"),
-    chapter: true,
+    inSection: true,
     warning:
       "Newest node in the fleet — still burning in. Do not onboard additional customer shards here until the Q3 capacity review signs off.",
     baseDetails: [
@@ -380,10 +400,12 @@ const servers: PageSpec[] = [
       { category: "Compute", label: "Instance Size", value: "VM.Standard3.Flex (4 OCPU)" },
       { category: "Compute", label: "RAM", value: "32GB" },
       { category: "Compute", label: "CPU", value: "4vcpu" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "4TB Block Volume" },
+      { category: "Compute", label: "Operating System", value: "Oracle Linux 9" },
+      { category: "Compute", label: "Traffic", value: "Pay-per-GB (OCI egress pricing)" },
+      { category: "Storage & Backup", label: "Storage", value: "4TB Block Volume" },
       { category: "Storage & Backup", label: "Storage Role", value: "Customer object storage — newest hot tier (Phoenix expansion)" },
       { category: "Storage & Backup", label: "Customer Data Hosted", value: "~3.1TB (encrypted at rest)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Every 6 hours, 30-day retention" },
+      { category: "Storage & Backup", label: "Backup", value: "Every 6 hours, 30-day retention" },
       { category: "Operations", label: "Uptime (90d)", value: "99.90%" },
     ],
     revisions: [
@@ -428,13 +450,14 @@ const servers: PageSpec[] = [
   },
 ];
 
-const contentPages: PageSpec[] = [
+const contentItems: ItemSpec[] = [
   {
     slug: "member-onboarding-guide",
     title: "Member Onboarding Guide",
+    type: "document",
     region: null,
     image: null,
-    chapter: false,
+    inSection: false,
     baseDetails: [
       { category: "Onboarding", label: "Provision laptop, VPN, and SSO credentials", value: "IT Helpdesk — Day 1" },
       { category: "Onboarding", label: "Grant read access to Storage Architecture book", value: "Team Lead — Day 1" },
@@ -468,9 +491,10 @@ const contentPages: PageSpec[] = [
   {
     slug: "it-holiday-party-event",
     title: "IT Holiday Party Event",
+    type: "document",
     region: null,
     image: null,
-    chapter: false,
+    inSection: false,
     baseDetails: [
       { category: "Event", label: "Date", value: "Friday, December 12" },
       { category: "Event", label: "Location", value: "NimbusVault HQ Cafeteria" },
@@ -505,9 +529,10 @@ const contentPages: PageSpec[] = [
   {
     slug: "server-outage-plan",
     title: "Server Outage Plan",
+    type: "document",
     region: null,
     image: null,
-    chapter: false,
+    inSection: false,
     baseDetails: [
       { category: "Severity", label: "SEV-1", value: "Customer data unavailable or at risk of loss — < 10 min response" },
       { category: "Severity", label: "SEV-2", value: "Single node or region degraded, redundancy intact — < 15 min response" },
@@ -551,13 +576,14 @@ const contentPages: PageSpec[] = [
 // disability care, health, education, and vocational services (oberlinhaus.de). This is a
 // fictional sample of what an MSP like michi.ws might document for a client like them when
 // hosting on unit.cloud's private cloud — not a representation of Oberlinhaus's actual systems.
-const oberlinhausServers: PageSpec[] = [
+const oberlinhausServers: ItemSpec[] = [
   {
     slug: "pve-unitcloud-potsdam-01",
     title: "pve-unitcloud-potsdam-01",
+    type: "server",
     region: "unit.cloud Private Cloud — Rechenzentrum Frankfurt/Main",
     image: img("oberlinhaus-pve-cluster"),
-    chapter: true,
+    inSection: true,
     warning:
       "Wartungsfenster ausschließlich Di/Do 22:00–24:00 Uhr — Schichtübergabe in den Wohnstätten darf nicht gestört werden. Vorher Rücksprache mit dem michi.ws NOC.",
     baseDetails: [
@@ -565,9 +591,12 @@ const oberlinhausServers: PageSpec[] = [
       { category: "Compute", label: "IP", value: "10.20.0.1" },
       { category: "Compute", label: "Instance Size", value: "2x AMD EPYC 7443P, 512GB RAM" },
       { category: "Compute", label: "CPU", value: "48 vCPU (Cluster-Kapazität)" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "8TB NVMe RAID10" },
+      { category: "Compute", label: "RAM", value: "512GB" },
+      { category: "Compute", label: "Operating System", value: "Proxmox VE 8 (Debian-based)" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "8TB NVMe RAID10" },
       { category: "Storage & Backup", label: "Storage Role", value: "Hypervisor-Host für alle produktiven Oberlinhaus-VMs" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" },
       { category: "Operations", label: "Uptime (90d)", value: "99.96%" },
       { category: "Operations", label: "Betreut durch", value: "unit.cloud (Infrastruktur) / michi.ws (Konfiguration & Monitoring)" },
       { category: "Zugang", label: "Admin-Login", value: "obh-cluster-admin" },
@@ -587,25 +616,30 @@ const oberlinhausServers: PageSpec[] = [
         ago: "3 weeks ago",
         author: "michael",
         summary: "Backup-Replikation von wöchentlich auf nightly umgestellt.",
-        changes: [{ field: "Backup Frequency", from: "Weekly Snapshot + Replikation zu unit.cloud RZ Nürnberg", to: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" }],
+        changes: [{ field: "Backup", from: "Weekly Snapshot + Replikation zu unit.cloud RZ Nürnberg", to: "Nightly Snapshot + Replikation zu unit.cloud RZ Nürnberg" }],
       },
     ],
   },
   {
     slug: "vm-bewohnerverwaltung",
     title: "vm-bewohnerverwaltung",
+    type: "server",
     region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
     image: img("oberlinhaus-bewohnerverwaltung"),
-    chapter: true,
+    inSection: true,
     warning:
       "Enthält besondere Kategorien personenbezogener Daten (Gesundheitsdaten) gem. Art. 9 DSGVO. Zugriff ausschließlich für autorisiertes Pflege- und Verwaltungspersonal — Zugriffsprotokoll wird von michi.ws quartalsweise geprüft.",
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
       { category: "Compute", label: "IP", value: "10.20.1.11" },
       { category: "Compute", label: "Instance Size", value: "8 vCPU / 32GB RAM" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "1TB" },
+      { category: "Compute", label: "CPU", value: "8 vCPU" },
+      { category: "Compute", label: "RAM", value: "32GB" },
+      { category: "Compute", label: "Operating System", value: "Windows Server 2022" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "1TB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Bewohner- und Fallverwaltung für die Wohnstätten Potsdam, Kleinmachnow und Werder (Havel)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" },
       { category: "Compliance", label: "Datenkategorie", value: "Besondere Kategorien personenbezogener Daten (Gesundheitsdaten), Art. 9 DSGVO" },
       { category: "Operations", label: "Uptime (90d)", value: "99.90%" },
       { category: "Zugang", label: "Service-Account", value: "svc-bewohnerverwaltung" },
@@ -625,23 +659,28 @@ const oberlinhausServers: PageSpec[] = [
         ago: "2 months ago",
         author: "michael",
         summary: "Aufbewahrungsfrist für Offsite-Backups auf Anfrage der Compliance-Beauftragten verlängert.",
-        changes: [{ field: "Backup Frequency", from: "Nightly, 60 Tage Aufbewahrung (Offsite-Replikation)", to: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" }],
+        changes: [{ field: "Backup", from: "Nightly, 60 Tage Aufbewahrung (Offsite-Replikation)", to: "Nightly, 90 Tage Aufbewahrung (Offsite-Replikation)" }],
       },
     ],
   },
   {
     slug: "vm-schulverwaltung",
     title: "vm-schulverwaltung",
+    type: "server",
     region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
     image: img("oberlinhaus-schulverwaltung"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
       { category: "Compute", label: "IP", value: "10.20.1.12" },
       { category: "Compute", label: "Instance Size", value: "4 vCPU / 16GB RAM" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "500GB" },
+      { category: "Compute", label: "CPU", value: "4 vCPU" },
+      { category: "Compute", label: "RAM", value: "16GB" },
+      { category: "Compute", label: "Operating System", value: "Windows Server 2022" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "500GB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Schulverwaltungssoftware für die Oberlin-Schulen und Kindertagesstätten (Potsdam, Michendorf)" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 30 Tage Aufbewahrung" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly, 30 Tage Aufbewahrung" },
       { category: "Operations", label: "Uptime (90d)", value: "99.85%" },
       { category: "Zugang", label: "Service-Account", value: "svc-schulverwaltung" },
       { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
@@ -660,16 +699,21 @@ const oberlinhausServers: PageSpec[] = [
   {
     slug: "vm-fileserver-potsdam",
     title: "vm-fileserver-potsdam",
+    type: "server",
     region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
     image: img("oberlinhaus-fileserver"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
       { category: "Compute", label: "IP", value: "10.20.1.13" },
       { category: "Compute", label: "Instance Size", value: "4 vCPU / 16GB RAM" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "4TB" },
+      { category: "Compute", label: "CPU", value: "4 vCPU" },
+      { category: "Compute", label: "RAM", value: "16GB" },
+      { category: "Compute", label: "Operating System", value: "Windows Server 2022" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "4TB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Datei- und Druckserver, Hauptstandort Potsdam-Babelsberg" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 30 Tage Aufbewahrung" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly, 30 Tage Aufbewahrung" },
       { category: "Operations", label: "Uptime (90d)", value: "99.93%" },
       { category: "Zugang", label: "Service-Account", value: "svc-fileserver-potsdam" },
       { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{SERVICE_HASH}}" },
@@ -681,23 +725,28 @@ const oberlinhausServers: PageSpec[] = [
         ago: "5 months ago",
         author: "michael",
         summary: "Speicherplatz nach Umstellung auf digitale Aktenführung erweitert.",
-        changes: [{ field: "Attached Disk Size", from: "2TB", to: "4TB" }],
+        changes: [{ field: "Storage", from: "2TB", to: "4TB" }],
       },
     ],
   },
   {
     slug: "vm-personalverwaltung",
     title: "vm-personalverwaltung",
+    type: "server",
     region: "unit.cloud Private Cloud — VM (Windows Server 2022)",
     image: img("oberlinhaus-personalverwaltung"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "Windows Server 2022 (VM auf pve-unitcloud-potsdam-01)" },
       { category: "Compute", label: "IP", value: "10.20.1.14" },
       { category: "Compute", label: "Instance Size", value: "6 vCPU / 24GB RAM" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "750GB" },
+      { category: "Compute", label: "CPU", value: "6 vCPU" },
+      { category: "Compute", label: "RAM", value: "24GB" },
+      { category: "Compute", label: "Operating System", value: "Windows Server 2022" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "750GB" },
       { category: "Storage & Backup", label: "Storage Role", value: "Personalverwaltung, Lohnbuchhaltung und Zeiterfassung für ca. 2.300 Mitarbeitende im Schichtbetrieb" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Nightly, 90 Tage Aufbewahrung" },
+      { category: "Storage & Backup", label: "Backup", value: "Nightly, 90 Tage Aufbewahrung" },
       { category: "Compliance", label: "Datenkategorie", value: "Personenbezogene Beschäftigtendaten gem. § 26 BDSG" },
       { category: "Operations", label: "Uptime (90d)", value: "99.91%" },
       { category: "Zugang", label: "Service-Account", value: "svc-personalverwaltung" },
@@ -717,14 +766,15 @@ const oberlinhausServers: PageSpec[] = [
   {
     slug: "pbx-3cx-oberlinhaus",
     title: "pbx-3cx-oberlinhaus",
+    type: "service",
     region: "unit.cloud Cloud-PBX (3CX)",
     image: img("oberlinhaus-pbx"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "unit.cloud Cloud-PBX (3CX)" },
       { category: "Compute", label: "IP", value: "10.20.2.20" },
       { category: "Storage & Backup", label: "Storage Role", value: "Telefonanlage für alle Standorte: Potsdam, Berlin, Michendorf, Bad Belzig, Kleinmachnow, Werder (Havel), Wolfsburg" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Weekly Konfigurations-Backup" },
+      { category: "Storage & Backup", label: "Backup", value: "Weekly Konfigurations-Backup" },
       { category: "Operations", label: "Uptime (90d)", value: "99.98%" },
       { category: "Operations", label: "Betreut durch", value: "unit.cloud (Cloud-PBX Betrieb)" },
       { category: "Zugang", label: "Admin-Login", value: "obh-pbx-admin" },
@@ -744,9 +794,10 @@ const oberlinhausServers: PageSpec[] = [
   {
     slug: "vpn-gateway-oberlinhaus",
     title: "vpn-gateway-oberlinhaus",
+    type: "network-device",
     region: "unit.cloud Private Cloud — Netzwerk",
     image: img("oberlinhaus-vpn-gateway"),
-    chapter: true,
+    inSection: true,
     baseDetails: [
       { category: "Compute", label: "Environment", value: "pfSense (VM auf pve-unitcloud-potsdam-01)" },
       { category: "Compute", label: "IP", value: "10.20.0.254" },
@@ -770,18 +821,23 @@ const oberlinhausServers: PageSpec[] = [
   {
     slug: "backup-dr-node-nuernberg",
     title: "backup-dr-node-nuernberg",
+    type: "server",
     region: "unit.cloud Private Cloud — Rechenzentrum Nürnberg (DR)",
     image: img("oberlinhaus-dr-nuernberg"),
-    chapter: true,
+    inSection: true,
     warning:
       "Failover-Ziel bei einem Ausfall des Rechenzentrums Frankfurt/Main. DR-Drills nur nach vorheriger Abstimmung mit michi.ws und dem unit.cloud NOC.",
     baseDetails: [
       { category: "Compute", label: "Environment", value: "unit.cloud Private Cloud (Proxmox VE 8, DR-Standort)" },
       { category: "Compute", label: "IP", value: "10.30.0.1" },
       { category: "Compute", label: "Instance Size", value: "1x AMD EPYC 7443P, 256GB RAM" },
-      { category: "Storage & Backup", label: "Attached Disk Size", value: "8TB NVMe RAID10" },
+      { category: "Compute", label: "CPU", value: "1x AMD EPYC 7443P" },
+      { category: "Compute", label: "RAM", value: "256GB" },
+      { category: "Compute", label: "Operating System", value: "Proxmox VE 8 (Debian-based)" },
+      { category: "Compute", label: "Traffic", value: "Unmetered (unit.cloud private backbone)" },
+      { category: "Storage & Backup", label: "Storage", value: "8TB NVMe RAID10" },
       { category: "Storage & Backup", label: "Storage Role", value: "Offsite-Backup- und Failover-Replik für alle produktiven Oberlinhaus-Systeme" },
-      { category: "Storage & Backup", label: "Backup Frequency", value: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" },
+      { category: "Storage & Backup", label: "Backup", value: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" },
       { category: "Operations", label: "Uptime (90d)", value: "99.99%" },
       { category: "Zugang", label: "Admin-Login", value: "obh-dr-admin" },
       { category: "Zugang", label: "Passwort-Hash (Demo)", value: "{{ADMIN_HASH}}" },
@@ -793,7 +849,7 @@ const oberlinhausServers: PageSpec[] = [
         ago: "1 month ago",
         author: "michael",
         summary: "Von nächtlicher Replikation auf kontinuierliche Replikation umgestellt.",
-        changes: [{ field: "Backup Frequency", from: "Nightly Replikation von pve-unitcloud-potsdam-01", to: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" }],
+        changes: [{ field: "Backup", from: "Nightly Replikation von pve-unitcloud-potsdam-01", to: "Kontinuierliche Replikation von pve-unitcloud-potsdam-01" }],
       },
     ],
   },
@@ -821,119 +877,48 @@ async function main() {
   }
   console.log(`Inserted ${userSpecs.length} users (demo password: ${DEMO_PASSWORD})`);
 
-  const [internalDepartments] = await db
-    .insert(shelves)
-    .values({
-      slug: "internal-departments",
-      title: "Internal Departments",
-      description: "Cross-team operating docs for everyone at NimbusVault.",
-      imageUrl: serverImage("nimbusvault-shelf-departments", 600, 360),
-    })
-    .returning();
-
-  const [productEngineering] = await db
-    .insert(shelves)
-    .values({
-      slug: "product-engineering",
-      title: "Product & Engineering",
-      description: "How we build and ship the NimbusVault storage platform.",
-      imageUrl: serverImage("nimbusvault-shelf-eng", 600, 360),
-    })
-    .returning();
-
-  const [clients] = await db
-    .insert(shelves)
-    .values({
-      slug: "clients",
-      title: "Clients",
-      description: "Infrastructure documented on behalf of managed-service clients.",
-      imageUrl: serverImage("nimbusvault-shelf-clients", 600, 360),
-    })
-    .returning();
-
   const [itDepartment] = await db
-    .insert(books)
+    .insert(collections)
     .values({
-      shelfId: internalDepartments.id,
       slug: "it-department",
       title: "IT Department",
       description:
         "Server inventory, storage cluster topology, and infrastructure runbooks for the platform that keeps customer data safe.",
       imageUrl: serverImage("nimbusvault-it-book", 600, 360),
-      pageCount: servers.length + contentPages.length,
+      category: "Internal",
     })
     .returning();
 
-  const [oberlinhausBook] = await db
-    .insert(books)
+  const [oberlinhausCollection] = await db
+    .insert(collections)
     .values({
-      shelfId: clients.id,
       slug: "oberlinhaus",
       title: "Oberlinhaus (Potsdam / Berlin)",
       description:
         "Server and system landscape for Oberlinhaus, a diaconal provider of disability care, health, education, and vocational services across Potsdam, Berlin, and Brandenburg. Hosted on unit.cloud's private cloud, managed by michi.ws.",
       imageUrl: serverImage("oberlinhaus-book", 600, 360),
-      pageCount: oberlinhausServers.length,
+      category: "Clients",
     })
     .returning();
 
-  await db.insert(books).values([
-    {
-      shelfId: internalDepartments.id,
-      slug: "customer-success",
-      title: "Customer Success Playbooks",
-      description: "Onboarding, retention, and escalation guides for the CS team.",
-      imageUrl: serverImage("nimbusvault-cs-book", 600, 360),
-      pageCount: 4,
-    },
-    {
-      shelfId: internalDepartments.id,
-      slug: "security-compliance",
-      title: "Security & Compliance",
-      description: "SOC 2, data residency, and encryption-at-rest policy documentation.",
-      imageUrl: serverImage("nimbusvault-security-book", 600, 360),
-      pageCount: 5,
-    },
-    {
-      shelfId: productEngineering.id,
-      slug: "storage-architecture",
-      title: "Storage Architecture",
-      description: "Deep dives on our hot/warm/cold tiering and replication design.",
-      imageUrl: serverImage("nimbusvault-arch-book", 600, 360),
-      pageCount: 7,
-    },
-    {
-      shelfId: productEngineering.id,
-      slug: "disaster-recovery",
-      title: "Disaster Recovery Playbooks",
-      description: "Failover drills, RTO/RPO targets, and DR site procedures.",
-      imageUrl: serverImage("nimbusvault-dr-book", 600, 360),
-      pageCount: 3,
-    },
-  ]);
-
-  const [serverSystemsChapter] = await db
-    .insert(chapters)
-    .values({ bookId: itDepartment.id, title: "Server Systems", sortOrder: 0 })
-    .returning();
-
-  async function insertBookPages(bookId: string, chapterId: string | null, specs: PageSpec[]) {
+  async function insertItems(collectionId: string, sectionName: string, specs: ItemSpec[]) {
     for (const spec of specs) {
-      let cumulativeDetails = spec.baseDetails;
+      let cumulativeFields = spec.baseDetails;
       const firstRevision = spec.revisions[0];
       const lastRevision = spec.revisions[spec.revisions.length - 1];
 
-      const [pageRow] = await db
-        .insert(pages)
+      const [itemRow] = await db
+        .insert(items)
         .values({
-          bookId,
-          chapterId: spec.chapter ? chapterId : null,
+          collectionId,
+          type: spec.type,
+          section: spec.inSection ? sectionName : null,
           slug: spec.slug,
-          title: spec.title,
+          name: spec.title,
           region: spec.region,
           imageUrl: spec.image,
           warning: spec.warning ?? null,
-          details: spec.baseDetails,
+          fields: spec.baseDetails,
           createdBy: userIds[firstRevision.author],
           updatedBy: userIds[lastRevision.author],
           currentRevision: lastRevision.revision,
@@ -943,29 +928,24 @@ async function main() {
         .returning();
 
       for (const rev of spec.revisions) {
-        cumulativeDetails = applyChanges(cumulativeDetails, rev.changes);
-        await db.insert(pageRevisions).values({
-          pageId: pageRow.id,
+        cumulativeFields = applyChanges(cumulativeFields, rev.changes);
+        await db.insert(itemRevisions).values({
+          itemId: itemRow.id,
           revisionNo: rev.revision,
           authorId: userIds[rev.author],
           summary: rev.summary,
-          detailsSnapshot: cumulativeDetails,
+          fieldsSnapshot: cumulativeFields,
           changes: rev.changes.map(({ field, from, to }) => ({ field, from, to })),
           createdAt: agoDate(rev.ago),
         });
       }
 
-      await db.update(pages).set({ details: cumulativeDetails }).where(eq(pages.id, pageRow.id));
+      await db.update(items).set({ fields: cumulativeFields }).where(eq(items.id, itemRow.id));
     }
   }
 
-  const allPageSpecs = [...servers, ...contentPages];
-  await insertBookPages(itDepartment.id, serverSystemsChapter.id, allPageSpecs);
-
-  const [oberlinhausChapter] = await db
-    .insert(chapters)
-    .values({ bookId: oberlinhausBook.id, title: "Server & Systeme", sortOrder: 0 })
-    .returning();
+  const allItDeptSpecs = [...servers, ...contentItems];
+  await insertItems(itDepartment.id, "Server Systems", allItDeptSpecs);
 
   // Mock credential hashes for the Oberlinhaus demo case — real argon2id hashes of clearly
   // fictional demo-only passwords, never used by any actual system.
@@ -979,9 +959,9 @@ async function main() {
     })),
   }));
 
-  await insertBookPages(oberlinhausBook.id, oberlinhausChapter.id, withMockHashes);
+  await insertItems(oberlinhausCollection.id, "Server & Systeme", withMockHashes);
 
-  console.log(`Inserted ${allPageSpecs.length + oberlinhausServers.length} pages across 2 books, with full revision history.`);
+  console.log(`Inserted ${allItDeptSpecs.length + oberlinhausServers.length} items across 2 collections, with full revision history.`);
   console.log("Seed complete.");
   process.exit(0);
 }
